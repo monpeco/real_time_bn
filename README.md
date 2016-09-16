@@ -15,7 +15,29 @@
 * [RTOSdownload] (http://edx-org-utaustinx.s3.amazonaws.com/UT601x/RTOSdownload.html)
 
 
+###Laboratories Overview
+Here is an overview of the six laboratories, one for each chapter
 
+1. Introduction to I/O using the BSP and debugging,
+    1. Learn about Keil compiler and debugger
+    2. Understand what the MK-II boosterpack measures
+    3. Learn how to perform timing profiles of the software system
+2. Thread management for a personal fitness device
+    1. Multiple threads
+    2. Real-time periodic threads
+    3. Spinlock semaphores
+    4. Round robin scheduler
+3. Thread synchronization and scheduling for a personal fitness device
+    1. Timer-based real-time threads
+    2. Thread sleeping
+    3. Blocking semaphores with first come first serve scheduler
+4. Real-time operating system for a hand-held video game
+    1. Edge triggered interrupts
+    2. Blocking semaphoreswith priority scheduler
+5. File system using the flash ROM of the microcontroller,
+    1. Logging data onto flash/playback of data
+6. Bluetooth personal area network.
+    1. Interacting with the device from a smart phone
 
 --
 Santiago, Sep 2016
