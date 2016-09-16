@@ -1,4 +1,4 @@
-#Real-Time Bluetooth Networks - Shape the World
+#Real-Time Bluetooth Networks - Shape the World :earth_americas:
 ###Learn the design fundamentals of a real-time operating system (RTOS) and how to build a Bluetooth network in this hands-on project-based course.
 
 #The University of Texas at Austin
