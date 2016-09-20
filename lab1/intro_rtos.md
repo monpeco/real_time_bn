@@ -148,3 +148,29 @@ embedded systems are extremely sensitive to ___cost___. Most applications are
 profit-driven. For high-volume systems a difference in pennies can significantly 
 affect profit.
 
+
+###Architecture
+
+####RTOS manages resources
+___Architecture (ARM)___
+* Processor
+* Instruction set (ASM)
+* Registers (GP / Specials)
+* Memory Layout
+* I/O => Memory mapped
+* Stack
+* Interruptions
+
+![Figure 1.3](https://cloud.githubusercontent.com/assets/16638078/18671942/6c54f322-7f1c-11e6-86de-d27c164d8a30.jpg)
+*Figure 1.3. The basic components of a computer system include processor, memory and I/O.*
+
+
+![Figure 1.4](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/38f0df45b15b2e32c2af142abc77de4e/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_04_processor.jpg)
+*Figure 1.4. The four basic components of a processor.*
+
+
+![Figure 1.5](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/6be6b8642a893026d5cc524548077776/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_05_CortexM.jpg)
+*Figure 1.5. Harvard architecture of an ARM Cortex-M-based microcontroller.*
+
+
+
