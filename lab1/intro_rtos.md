@@ -242,7 +242,23 @@ with the processor via the ___Private Peripheral Bus (PPB)___. The tight integra
 of the processor and interrupt controller provides fast execution of ___Interrupt 
 service routines (ISRs)___, dramatically reducing the interrupt latency.
 
+--
 
+###Memory
+
+|Resource|Function|
+|----|----|
+|ROM|Instructions|  
+|RAM|Data. Our local variables, or data structures, the stack|
+|I/O|These are all the pins that come out of our board|
+
+|TM4C123|--|
+|Resource|Adresses|
+|----|----|
+|ROM 256 KiB|0x0000.0000 - 0x0003.FFFF|
+|RAM 32 KiB |0x2000.0000 - 0x2000.7FFF|
+|I/O Devices Registers |0x400F.0000 - 0x400F.FFFF|
+|Internal I/O|0xE000.0000 - 0xE004.1FFF|
 
 
 
