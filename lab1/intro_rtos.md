@@ -252,8 +252,8 @@ service routines (ISRs)___, dramatically reducing the interrupt latency.
 |RAM|Data. Our local variables, or data structures, the stack|
 |I/O|These are all the pins that come out of our board|
 
-|TM4C123|
-|Resource|Adresses|
+
+|TM4C123 Resource|Adresses|
 |----|----|
 |ROM 256 KiB|0x0000.0000 - 0x0003.FFFF|
 |RAM 32 KiB |0x2000.0000 - 0x2000.7FFF|
@@ -262,6 +262,15 @@ service routines (ISRs)___, dramatically reducing the interrupt latency.
 
 
 
+|Part |number	|RAM	|Flash	|I/O	|I/O modules
+|----|----|----|----|----|----|
+|MSP432P401RIPZ	|64	|256	|84	|floating point, DMA|
+|LM4F120H5QR	|32	|256	|43	|floating point, CAN, DMA, USB|
+|TM4C123GH6PM	|32	|256	|43	floating point, CAN, DMA, USB, PWM|
+|STM32F051R8T6	|8	|64	|55	|DAC, Touch sensor, DMA, I2S, HDMI, PWM|
+|MKE02Z64VQH2	|4	|64v	|53	|PWM|
+||KiB|	KiB|	pins||	
+Table 1.2. Memory and I/O modules (all have SysTick, RTC, timers, UART, I2C, SSI, and ADC).
 
 
 
