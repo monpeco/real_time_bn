@@ -260,24 +260,54 @@ service routines (ISRs)___, dramatically reducing the interrupt latency.
 |I/O Devices Registers |0x400F.0000 - 0x400F.FFFF|
 |Internal I/O|0xE000.0000 - 0xE004.1FFF|
 
+![Figure 1.6](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/8c92e9c95878272a9ebd01774948d4af/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_06_memoryMap.jpg)
+*Figure 1.6. Memory map of the TM4C123 with 256k ROM and 32k RAM and the MSP432 with 256k ROM and 64k RAM.*
 
+The microcontrollers in the Cortex-M family differ by the amount of memory and by 
+the types of I/O modules. There are hundreds of members in this family; some of 
+them are listed in Table 1.2. The memory maps of TM4C123 and MSP432 are shown in 
+Figure 1.6. Although this course focuses on two microcontrollers from Texas Instruments, 
+all ARM Cortex-M microcontrollers have similar memory maps. In general, Flash ROM 
+begins at address 0x0000.0000, RAM begins at 0x2000.0000, the peripheral I/O 
+space is from 0x4000.0000 to 0x5FFF.FFFF, and I/O modules on the private peripheral 
+bus exist from 0xE000.0000 to 0xE00F.FFFF. In particular, the only differences in 
+the memory map for the various members of the Cortex-M family are the ending addresses 
+of the flash and RAM.
 
-|Part |number	|RAM	|Flash	|I/O	|I/O modules
-|----|----|----|----|----|----|
+|Part number	|RAM	|Flash	|I/O	|I/O modules
+|----|----|----|----|----|
 |MSP432P401RIPZ	|64	|256	|84	|floating point, DMA|
 |LM4F120H5QR	|32	|256	|43	|floating point, CAN, DMA, USB|
-|TM4C123GH6PM	|32	|256	|43	floating point, CAN, DMA, USB, PWM|
+|TM4C123GH6PM	|32	|256	|43	|floating point, CAN, DMA, USB, PWM|
 |STM32F051R8T6	|8	|64	|55	|DAC, Touch sensor, DMA, I2S, HDMI, PWM|
 |MKE02Z64VQH2	|4	|64v	|53	|PWM|
 ||KiB|	KiB|	pins||	
-Table 1.2. Memory and I/O modules (all have SysTick, RTC, timers, UART, I2C, SSI, and ADC).
 
+*Table 1.2. Memory and I/O modules (all have SysTick, RTC, timers, UART, I2C, SSI, and ADC).*
 
+--
 
+Having multiple buses means the processor can perform multiple tasks in parallel. 
+On the TM4C123, ___general purpose input/output (GPIO)___ ports can be accessed 
+using either the ___PPB___ or ___AHPB___. The following is some of the tasks that 
+can occur in parallel
 
+* ICode bus Fetch opcode from ROM
+* DCode bus Read constant data from ROM
+* System bus Read/write data from RAM or I/O, fetch opcode from RAM
+* PPB Read/write data from internal peripherals like the NVIC
+* AHPB Read/write data from internal peripherals like the USB
 
-
-
+Instructions and data are accessed using a common bus on a von Neumann machine. 
+The Cortex-M processor is a Harvard architecture because instructions are fetched on 
+the ICode bus and data accessed on the system bus. The address signals on the ARM 
+Cortex-M processor include 32 lines, which together specify the memory address 
+(0x0000.0000 to 0xFFFF.FFFF) that is currently being accessed. The address specifies 
+both which module (input, output, RAM, or ROM) as well as which cell within 
+the module will communicate with the processor. The data signals contain the 
+information that is being transferred and also include 32 bits. However, on the 
+system bus it can also transfer 8-bit or 16-bit data. The control signals specify 
+the timing, the size, and the direction of the transfer.
 
 
 
