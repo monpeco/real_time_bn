@@ -161,16 +161,101 @@ ___Architecture (ARM)___
 * Stack
 * Interruptions
 
+--
+A ___computer___ combines a central processing unit (CPU), random access memory (RAM), 
+read only memory (ROM), and input/output (I/O) ports. The common bus in Figure 1.3 
+defines the Von Neumann architecture.
+
 ![Figure 1.3](https://cloud.githubusercontent.com/assets/16638078/18671942/6c54f322-7f1c-11e6-86de-d27c164d8a30.jpg)
 *Figure 1.3. The basic components of a computer system include processor, memory and I/O.*
 
+___Software___ is an ordered sequence of very specific instructions that are stored in 
+memory, defining exactly what and when certain tasks are to be performed.
+
+--
 
 ![Figure 1.4](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/38f0df45b15b2e32c2af142abc77de4e/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_04_processor.jpg)
 *Figure 1.4. The four basic components of a processor.*
 
+The ___ARM Cortex-M processor___ has four major components, as illustrated in Figure 1.4. 
+There are___Bus Interface Units (BIU)___ that read data from the bus during a read 
+cycle and write data onto the bus during a write cycle.
+The ___BIU___ always drives the address bus and the control signals of the bus. 
+___The Effective Address Register (EAR)___ contains the memory address used to 
+fetch the data needed for the current instruction. Cortex-M microcontrollers execute 
+![Thumb instructions](http://stackoverflow.com/questions/10638130/what-is-the-arm-thumb-instruction-set)
+extended with Thumb-2 technology. An overview of these instructions will be presented in 
+Section 1.5. Many functions in an operating system will require detailed understanding 
+of the architecture and assembly language.
+
+The ___Control Unit (CU)___ orchestrates the sequence of operations in the processor. 
+The CU issues commands to the other three components. The ___Instruction Register (IR)___ 
+contains the operation code (or ___op code___) for the current instruction. 
+When extended with Thumb-2 technology, op codes are either 16 or 32 bits wide.
+
+The ___Arithmetic Logic Unit (ALU)___ performs arithmetic and logic operations. 
+Addition, subtraction, multiplication and division are examples of arithmetic operations. 
+Examples of logic operations are, and, or, exclusive-or, and shift. Many processors 
+used in embedded applications support specialized operations such as table lookup, 
+multiply and accumulate, and overflow detection.
+
+--
+
+A very small microcomputer, called a ___microcontroller___, contains all the components 
+of a computer (processor, memory, I/O) on a single chip. The Atmel ATtiny and the 
+TI TM4C123 are examples of microcontrollers. Because a microcomputer is a small 
+computer, this term can be confusing because it is used to describe a wide range 
+of systems from a 6-pin ATtiny4 running at 1 MHz with 512 bytes of program memory 
+to a personal computer with state-of-the-art 64-bit multi-core processor running 
+at multi-GHz speeds having terabytes of storage.
+
+In an embedded system the software is converted to machine code, which is a list 
+of instructions, and stored in nonvolatile flash ROM. As instructions are fetched, 
+they are placed in a ___Pipeline___. This allows instruction fetching to run ahead 
+of execution. Instructions on the Cortex-M processor are fetched in order and 
+executed in order. However, it can execute one instruction while fetching the next. 
+Many high-speed processors allow out of order execution, support parallel execution 
+on multiple cores, and employ branch prediction.
+
+On the ARM Cortex-M processor, an instruction may read memory or write memory, 
+but does not read and write memory in the same instruction. Each of the phases 
+may require one or more bus cycles to complete. Each bus cycle reads or writes 
+one piece of data. Because of the multiple bus architecture, most instructions 
+execute in one or two cycles. For more information on the time to execute 
+instructions, see Table 3.1 in the Cortex-M Technical Reference Manual.
 
 ![Figure 1.5](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/6be6b8642a893026d5cc524548077776/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_05_CortexM.jpg)
 *Figure 1.5. Harvard architecture of an ARM Cortex-M-based microcontroller.*
+
+Figure 1.5 shows a simplified block diagram of a microcontroller based on the 
+ARM Cortex-M processor. It is a ___Harvard architecture___ because it has separate 
+data and instruction buses. The instruction set combines the high performance 
+typical of a 32-bit processor with high code density typical of 8-bit and 16-bit 
+microcontrollers. Instructions are fetched from flash ROM using the ___ICode bus___. 
+Data are exchanged with memory and I/O via the ___System Bus Interface___. 
+There are many sophisticated debugging features utilizing the ___DCode Bus___. 
+An interrupt is a hardware-triggered software function, which is extremely important 
+for real-time embedded systems. The ___Latency of an interrupt service__ is the 
+time between hardware trigger and software response. Some internal peripherals, 
+like the ___nested vectored interrupt controller (NVIC)__, communicate directly 
+with the processor via the ___Private Peripheral Bus (PPB)___. The tight integration 
+of the processor and interrupt controller provides fast execution of ___Interrupt 
+service routines (ISRs)___, dramatically reducing the interrupt latency.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
