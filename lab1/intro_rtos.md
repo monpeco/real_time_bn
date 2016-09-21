@@ -252,7 +252,7 @@ service routines (ISRs)___, dramatically reducing the interrupt latency.
 |RAM|Data. Our local variables, or data structures, the stack|
 |I/O|These are all the pins that come out of our board|
 
-|TM4C123||
+|TM4C123|
 |Resource|Adresses|
 |----|----|
 |ROM 256 KiB|0x0000.0000 - 0x0003.FFFF|
