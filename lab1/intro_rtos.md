@@ -183,7 +183,7 @@ cycle and write data onto the bus during a write cycle.
 The ___BIU___ always drives the address bus and the control signals of the bus. 
 ___The Effective Address Register (EAR)___ contains the memory address used to 
 fetch the data needed for the current instruction. Cortex-M microcontrollers execute 
-![Thumb instructions](http://stackoverflow.com/questions/10638130/what-is-the-arm-thumb-instruction-set)
+[Thumb instructions](http://stackoverflow.com/questions/10638130/what-is-the-arm-thumb-instruction-set)
 extended with Thumb-2 technology. An overview of these instructions will be presented in 
 Section 1.5. Many functions in an operating system will require detailed understanding 
 of the architecture and assembly language.
