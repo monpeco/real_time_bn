@@ -318,17 +318,31 @@ on the Arithmetich Logic Unit, which contains the ___Registers___.
 |Type of Register|Register|Function|
 |---|---|---|
 |General Purpose Registers| R1, R2, ... , R12|data or addresses|
-|special Registers|R13, R14, and R15||
+|Special Registers|R13, R14, and R15||
 ||R13 |Stack Pointer (SP)|
 ||R14 |Link Register (LR)|
-|other Special Registers|||
+|Other Special Registers|||
 ||Processor Status Register (PSR)| Info condition code bits, ISR number, etc|
 ||PRIMASK|Enable/Disable interrupt|
 ||Base Priority Register|Priority level of the current operation|
 ||Control register|Info about status of the processor (High/Low Privilege)|
 
     
-The registers on an ARM Cortex-M processor are depicted in Figure 1.7. R0 to R12 are general purpose registers and contain either data or addresses. Register R13 (also called the stack pointer, SP) points to the top element of the stack. Actually, there are two stack pointers: the main stack pointer (MSP) and the process stack pointer (PSP). Only one stack pointer is active at a time. In a high-reliability operating system, we could activate the PSP for user software and the MSP for operating system software. This way the user program could crash without disturbing the operating system. Most of the commercially available real-time operating systems available on the Cortex M will use the PSP for user code and MSP for OS code. Register R14 (also called the link register, LR) is used to store the return location for functions. The LR is also used in a special way during exceptions, such as interrupts. Register R15 (also called the program counter, PC) points to the next instruction to be fetched from memory. The processor fetches an instruction using the PC and then increments the PC by the length (in bytes) of the instruction fetched.
+The registers on an ARM Cortex-M processor are depicted in Figure 1.7. R0 to R12 are 
+___General Purpose Registers (GPR)___ and contain either data or addresses. 
+Register ___R13___ (also called the stack pointer, SP) points to the top element 
+of the stack. Actually, there are two stack pointers: the ___Main Stack Pointer (MSP)___ 
+and the ___Process Stack Pointer (PSP)___. Only one stack pointer is active at a time. 
+In a high-reliability operating system, we could activate the PSP for user software 
+and the MSP for operating system software. This way the user program could crash 
+without disturbing the operating system. Most of the commercially available real-time 
+operating systems available on the Cortex M will use the PSP for user code and MSP 
+for OS code. Register ___R14___ (also called the Link Register, LR) is used to 
+store the return location for functions. The LR is also used in a special way during 
+exceptions, such as interrupts. Register ___R15___ (also called the program counter, PC) 
+points to the next instruction to be fetched from memory. The processor fetches 
+an instruction using the PC and then increments the PC by the length (in bytes) of 
+the instruction fetched.
 
 ![Figure 1.7](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/1e0bbbb43f4ab3cf696535e7e8c06059/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_07_registers.jpg)
 *Figure 1.7. The registers on the ARM Cortex-M processor.*
