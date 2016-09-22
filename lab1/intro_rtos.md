@@ -309,6 +309,96 @@ information that is being transferred and also include 32 bits. However, on the
 system bus it can also transfer 8-bit or 16-bit data. The control signals specify 
 the timing, the size, and the direction of the transfer.
 
+--
+
+###Registers
+So inside the processor, we have our arithmetic logic unit and the control unit, and focus
+on the Arithmetich Logic Unit, which contains the ___Registers___.
+
+|Type of Register|Register|Function|
+|---|---|---|
+|General Purpose Registers| R1, R2, ... , R12|data or addresses|
+|special Registers|R13, R14, and R15||
+||R13 |Stack Pointer (SP)|
+||R14 |Link Register (LR)|
+|other Special Registers|||
+||Processor Status Register (PSR)| Info condition code bits, ISR number, etc|
+||PRIMASK|Enable/Disable interrupt|
+||Base Priority Register|Priority level of the current operation|
+||Control register|Info about status of the processor (High/Low Privilege)|
+
+    
+The registers on an ARM Cortex-M processor are depicted in Figure 1.7. R0 to R12 are general purpose registers and contain either data or addresses. Register R13 (also called the stack pointer, SP) points to the top element of the stack. Actually, there are two stack pointers: the main stack pointer (MSP) and the process stack pointer (PSP). Only one stack pointer is active at a time. In a high-reliability operating system, we could activate the PSP for user software and the MSP for operating system software. This way the user program could crash without disturbing the operating system. Most of the commercially available real-time operating systems available on the Cortex M will use the PSP for user code and MSP for OS code. Register R14 (also called the link register, LR) is used to store the return location for functions. The LR is also used in a special way during exceptions, such as interrupts. Register R15 (also called the program counter, PC) points to the next instruction to be fetched from memory. The processor fetches an instruction using the PC and then increments the PC by the length (in bytes) of the instruction fetched.
+
+![Figure 1.7](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/1e0bbbb43f4ab3cf696535e7e8c06059/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_07_registers.jpg)
+*Figure 1.7. The registers on the ARM Cortex-M processor.*
+
+
+The ___ARM Architecture Procedure Call Standard, AAPCS___, part of the ARM Application 
+Binary Interface (ABI), uses registers R0, R1, R2, and R3 to pass input parameters 
+into a C function or an assembly subroutine. Also according to AAPCS we place the 
+return parameter in Register R0. The standard requires functions to preserve the 
+contents of R4-R11. In other words, functions save R4-R11, use R4-R11, and then 
+restore R4-R11 before returning. Another restriction is to keep the stack aligned 
+to 64 bits, by pushing and popping an even number of registers.
+
+--
+
+There are three status registers named ___Application Program Status Register (APSR)___, 
+the Interrupt Program Status Register (IPSR), and the ___Execution Program Status 
+Register (EPSR)___ as shown in Figure 1.8. These registers can be accessed 
+individually or in combination as the ___Program Status Register (PSR)___.
+
+
+![Figure 1.8](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/1de71c785578c22878cb866793ff0dc5/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_08_statusregister.jpg)
+*Figure 1.8. The program status register of the ARM Cortex-M processor.*
+
+The N, Z, V, C, and Q bits signify the status of the previous ALU operation. Many 
+instructions set these bits to signify the result of the operation. In general, 
+the ___N bit___ is set after an arithmetical or logical operation signifying whether or 
+not the result is negative. Similarly, the ___Z bit___ is set if the result is zero. 
+The ___C bit___ means carry and is set on an unsigned overflow, and the ___V bit___ 
+signifies signed overflow. The ___Q bit___ is the sticky saturation flag, indicating 
+that “saturation” has occurred, and is set by the SSAT and USAT instructions.
+
+The ___T bit___ will always be 1, indicating the ARM Cortex-M processor is executing 
+Thumb instructions. The ___ICI/IT bits___ are used by interrupts and by IF-THEN 
+instructions. The ___ISR_NUMBER___ indicates which interrupt, if any, the processor 
+is handling. ___Bit 0___ of the special register ___PRIMASK___ is the interrupt mask 
+bit, or ___I bit___. If this bit is 1 most interrupts and exceptions are not allowed. 
+If the bit is 0, then interrupts are allowed. __Bit 0__ of the special register 
+___FAULTMASK___ is the fault mask bit. If this bit is 1 all interrupts and faults 
+are disallowed. If the bit is 0, then interrupts and faults are allowed. The 
+___Nonmaskable Interrupt (NMI)__ is not affected by these mask bits. The ___BASEPRI___ 
+register defines the priority of the executing software. It prevents interrupts 
+with lower or equal priority from interrupting the current execution but allows 
+higher priority interrupts. For example if BASEPRI equals 3, then requests with 
+level 0, 1, and 2 can interrupt, while requests at levels 3 and higher will be 
+postponed. The details of interrupt processing will be presented in Chapters 2 and 3.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
