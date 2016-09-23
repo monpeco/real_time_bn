@@ -391,26 +391,105 @@ level 0, 1, and 2 can interrupt, while requests at levels 3 and higher will be
 postponed. The details of interrupt processing will be presented in Chapters 2 and 3.
 
 
+--
+--
+
+###Stack
+
+The stack is a region of memory inside the RAM. The Stack Pointer allways points to 
+the botton part of the Stack, which is called the "Higher Adress", and the end is called
+"Lower Adrees". The two operations that allow us to grow or shrink the stack are 
+the push and pop operations. The stack is a FIFO Structure
+
+####Guidelines
+* Equal number of Pushes and Pops (balancing the stack)
+* Perform Push and Pop operations in the allocated area
+* Do not read or write to the free area
+* Push / Pop are 32-bits operation
+
+--
+
+The ___Stack___ is a last-in-first-out temporary storage. Managing the stack is an 
+important function for the operating system. To create a stack, a block of RAM 
+is allocated for this temporary storage. On the ARM Cortex-M processor, the stack 
+always operates on 32-bit data. All stack accesses are word aligned, which means 
+the least significant two bits of SP must always be 0. The stack pointer (SP) 
+points to the 32-bit data on the top of the stack.
+
+To ___Push___ data we first decrement the SP by 4 then store 32-bit data at the SP. We 
+refer to the most recent item pushed as the “top of the stack”. If though it is 
+called the “top”, this item is actually the stored at the lowest address! 
+When data is pushed it is saved on the stack.
+
+To ___Pop___ data from the stack, the 32-bit information pointed to by SP is first 
+retrieved, and then the stack pointer is incremented by 4. SP points to the last 
+item pushed, which will also be the next item to be popped. A stack is a last in 
+first out (LIFO) storage, meaning the pop operation will retrieve the newest or 
+most recently saved value. When data is popped it is removed from the stack.
+
+--
+The boxes in Figure 1.9 represent 32-bit storage elements in RAM. The colored boxes 
+in the figure refer to actual data stored on the stack. The white boxes refer to 
+locations in the allocated stack area that do not contain data. These allocated 
+but not used locations are called the ___free area___. This figure illustrates how the 
+stack is used to push the contents of Registers R1, and R2 in that order. Assume 
+Register R0 initially contains the value 13, R1 contains 2 and R2 contains 5. 
+The drawing on the left shows the initial stack. The software executes these 
+three instructions, first pushing two elements, and then popping one.
+
+![](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/b91bac073abc6ebc86b48d3aaebe5eb9/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_09_stack.jpg)
+*Figure 1.9. Stack picture showing two pushes and one pop. Push stores data onto the stack, pop retrieves/removes data from the stack.*
+
+The instruction PUSH {R1} saves the value of R1 on the stack. It first decrements 
+SP by 4, and then it stores the contents of R1 into the memory location pointed 
+to by SP. Assuming R1, R2 had values 13, 5 respectively, after the two push 
+instructions the stack contains the numbers 13 and 5, with 5 on top, (third 
+picture in Figure 1.9). The instruction POP {R0} retrieves the most recent data 
+from the stack. It first moves the value from memory pointed to by SP into R0, 
+and then it increments SP by 4.
+
+In Figure 1.9 we pushed two elements and then popped one, so the stack has more 
+data than when we started. Normally, all blocks of software will first push and 
+then pop, where the number of pops equals the number of pushes. Having an equal 
+number of pushes and pops is defined as ___balancing the stack___.
 
 
+We define the 32-bit word pointed to by SP as the top entry of the stack. If it 
+exists, we define the 32-bit data immediately below the top, at SP+4, as next to 
+top. Proper use of the stack requires following these important guidelines
 
+* Functions should have an equal number of pushes and pops
+* Stack accesses (push or pop) should not be performed outside the allocated area
+* Stack reads and writes should not be performed within the free area
+* Push and pop are 32-bit operation
 
+Functions that violate rule number 1 will probably crash when incorrect data are 
+popped off at a later time. Violations of rule number 2 usually result from a 
+stack underflow or overflow. Overflow occurs when the number of elements became 
+larger than the allocated space. Stack underflow is caused when there are more 
+pops than pushes, and is always the result of a software bug. A stack overflow 
+can be caused by two reasons. If the software mistakenly pushes more than it pops, 
+then the stack pointer will eventually overflow its bounds. Even when there is 
+exactly one pop for each push, a stack overflow can occur if the stack is not 
+allocated large enough. The processor will generate a bus fault when the software
+tries read from or write to an address that doesn’t exist. If valid RAM exists 
+below the stack then further stack operations will corrupt data in this memory.
 
+When debugging Lab 2, it will be important to develop techniques to visualize the 
+stack. Stack errors represent typical failure modes of an operating system.
 
+The stack plays an important role in interrupt processing. Executing an interrupt 
+service routine will automatically push eight 32-bit words onto the stack. Since 
+interrupts are triggered by hardware events, exactly when interrupts occur is not 
+under software control. Therefore, violations of rule 3 will cause erratic behavior 
+when operating with interrupts.
 
+The processor allows for two stacks, the main stack (MSP) and the process stack 
+(PSP), with independent copies of the stack pointer. The OS would run safer if 
+the application code used the PSP and the OS code used the MSP. However to make 
+the OS simpler we will run both the application and the OS using the MSP.
 
-
-
-
-
-
-
-
-
-
-
-
-
+--
 
 
 
