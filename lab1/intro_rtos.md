@@ -490,6 +490,70 @@ the application code used the PSP and the OS code used the MSP. However to make
 the OS simpler we will run both the application and the OS using the MSP.
 
 --
+###Startup
+
+The ___Reset Button___, is a hardware event which causes a sequence of operations to occur, ending up with our program starting.
+
+In the ROM, the initial location is the Stack Pointer (SP), so the first thing that happens is a 32-bit value out of ROM is loaded into the stack pointer.
+So our stack is now initialized.
+
+The second event that will happend is location 4, 5, 6 and 7 are the initial Program Counter (PC), so that is loaded into the Program Counter.
+
+Also, set to the Link Register (LR) a 0xFFFF|FFFF, and this code means this link register is not valid.
+
+It will also set the T bit, which is in the Program Status Register (PSR) equal to 1, that means Thumb, so we will never go into ARM mode.
+
+We will notice some other things about the mode, the mode is going to set us up the privilege level, the Thread Privilege Level (TPL) will be set to privilege. This means we have access to everything.
+
+We're going to notice that there's actually two stack pointers in the machine.So we have the ability to have a system stack,
+and the main stack pointer will point to it.
+And we can have a user stack, and the process stack pointer
+could point to it.
+
+And on reset, it's going to activate or use the main stack pointer, so the value is going to be equal to the first location on ROM.
+
+--
+
+A reset occurs immediately after power is applied and can also occur by pushing 
+the reset button available on most boards. After a reset, the processor is in 
+___thread mode___, running at a privileged level, and using the ___MSP stack pointer___. 
+The 32-bit value at flash ROM location 0 is loaded into the SP. A reset also 
+loads the 32-bit value at location 4 into the PC. This value is called the ___reset 
+vector___. All instructions are halfword aligned. Thus, the least significant bit of 
+PC must be 0. However, the assembler will set the least significant bit in the 
+reset vector, so the processor will properly initialize the thumb bit (T) in the 
+PSR. On the ARM Cortex-M, the T bit should always be set to 1. On reset, the 
+processor initializes the LR to 0xFFFFFFFF.
+
+The ARM Cortex-M processor has two privilege levels called ___privileged___ and 
+___unprivileged___. Bit 0 of the CONTROL register is the thread privilege level 
+(TPL). If TPL is 1 the processor level is privileged. If the bit is 0, then 
+processor level is unprivileged. Running at the unprivileged level prevents access 
+to various features, including the system timer and the interrupt controller. 
+Bit 1 of the CONTROL register is the active stack pointer selection (ASPSEL). 
+If ASPSEL is 1, the processor uses the PSP for its stack pointer. If ASPSEL is 0, 
+the MSP is used. When designing a high-reliability operating system, we will run 
+the user code at an unprivileged level using the PSP and the OS code at the 
+privileged level using the MSP.
+
+The processor knows whether it is running in the ___foreground___ (i.e., the main 
+program) or in the ___background___ (i.e., an interrupt service routine). ARM 
+defines the foreground as ___thread mode___, and the background as ___handler mode__. 
+Switching between thread and handler modes occurs automatically. The processor 
+begins in thread mode, signified by ISR_NUMBER=0. Whenever it is servicing an 
+interrupt it switches to handler mode, signified by setting ISR_NUMBER to specify 
+which interrupt is being processed. All interrupt service routines run using the MSP. 
+In particular, the context is saved onto whichever stack pointer is active, but 
+during the execution of the ISR, the MSP is used. For a high reliability operation 
+all interrupt service routines will reside in the operating system. User code can 
+be run under interrupt control by providing hooks, which are function pointers. 
+The user can set function pointers during initialization, and the operating system 
+will call the function during the interrupt service routine.
+
+> Observation: Processor modes and the stack are essential components of building a 
+reliable operating system. In particular the processor mode is an architectural 
+feature that allows the operating system to restrict access to critical system resources.
+
 
 
 
