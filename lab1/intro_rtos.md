@@ -554,6 +554,99 @@ will call the function during the interrupt service routine.
 reliable operating system. In particular the processor mode is an architectural 
 feature that allows the operating system to restrict access to critical system resources.
 
+###Input/output
+
+I/O is an important part of embedded systems in general. One of the important 
+features of an operating system is to manage I/O. Input and output are the means 
+of an embedded system to interact with its world. The external devices attached 
+to the microcontroller provide functionality for the system. These devices connect 
+to the microcontroller through ports. A pin is a specific wire on the microcontroller 
+through which we perform input or output. A collection of pins grouped by common 
+functionality is called a ___port___. An ___input port___ is hardware on the microcontroller 
+that allows information about the external world to enter into the computer. The 
+microcontroller also has hardware called an ___output port___ to send information out 
+to the external world. The ___GPIO (General Purpose Input Output)___ pins on a microcontroller 
+are programmable to be digital input, digital output, analog input or complex and 
+protocol (like UART etc.) specific. Microcontrollers use most of their pins for I/O 
+(called GPIO), see Figure 1.10. Only a few pins are not used for I/O. Examples of 
+pins not used for I/O include power, ground, reset, debugging, and the clock. More 
+specifically, the TM4C123 uses 43 of its 64 pins for I/O. Similarly, the MSP432 uses 
+84 of its 100 pins for I/O.
+
+
+![Figure 1.10](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/3b1aa5a48ed71e08dd84d8189390de77/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_10_microcontrollerChips.jpg)
+*Figure 1.10. Most of the pins on the microcontroller can perform input/output.*
+
+An ___interface___ is defined as the collection of the I/O port, external electronics, 
+physical devices, and the software, which combine to allow the computer to communicate 
+with the external world. An example of an ___input interface___ is a switch, where the 
+operator toggles the switch, and the software can recognize the switch position. 
+An example of an ___output interface___ is a light-emitting diode (LED), where 
+the software can turn the light on and off, and the operator can see whether or 
+not the light is shining. There is a wide range of possible inputs and outputs, 
+which can exist in either digital or analog form. In general, we can classify I/O 
+interfaces into four categories
+
+* ___Parallel/digital___ - binary data are available simultaneously on a group of lines
+* ___Serial___ - binary data are available one bit at a time on a single line
+* ___Analog___ - data are encoded as an electrical voltage, current or power
+* ___Time___ - data are encoded as a period, frequency, pulse width or phase shift
+
+In a system with ___memory-mapped I/O___, as shown in Figure 1.11, the I/O ports are 
+connected to the processor in a manner similar to memory. I/O ports are assigned 
+addresses, and the software accesses I/O using reads and writes to the specific 
+I/O addresses. These addresses appear like regular memory addresses, except 
+accessing them results in manipulation of a functionality of the mapped I/O port, 
+hence the term memory-mapped I/O. As a result, the software inputs from an input 
+port using the same instructions as it would if it were reading from memory. 
+Similarly, the software outputs from an output port using the same instructions 
+as it would if it were writing to memory.
+
+![](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/be60ef178121f5c38cad73de524d6693/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_11_MemoryMappedIOCortexM.jpg)
+*Figure 1.11. Memory-mapped input/output.*
+
+Most pins on Cortex M microcontrollers can be used for general purpose I/O (GPIO) 
+called regular functions or for more complex functions called ___alternate functions___. 
+For example, port pins PA1 and PA0 on the TM4C123 can be either regular parallel 
+port pins, or an asynchronous serial port called universal asynchronous 
+receiver/transmitter (UART). Some of the alternative functions used in this class are:
+
+* UART Universal asynchronous receiver/transmitter
+* SSI or SPI Synchronous serial interface or serial peripheral interface
+* I2C Inter-integrated circuit
+* Timer Periodic interrupts
+* PWM Pulse width modulation
+* ADC Analog to digital converter, measurement analog signals
+
+The ___UART___ can be used for serial communication between computers. It is asynchronous 
+and allows for simultaneous communication in both directions. The ___SSI___ (also called ___SPI___) 
+is used to interface medium-speed I/O devices. In this class, we will use ___SSI___ to 
+interface a graphics display. ___I2C___ is a simple I/O bus that we will use to interface 
+low speed peripheral devices. In this class we use ___I2C___ to interface a light sensor 
+and a temperature sensor. We will use the timer modules to create periodic interrupts. 
+___PWM___ outputs could be used to apply variable power to motor interfaces. However, 
+in this class we use ___PWM___ to adjust the volume of the buzzer. The ___ADC___ will be used 
+to measure the amplitude of analog signals, and will be important in data acquisition 
+systems. In this class we will connect the microphone, joystick and accelerometer 
+to the ADC.
+
+___Joint Test Action Group (JTAG)___, standardized as the IEEE 1149.1, is a standard test 
+access port used to program and debug the microcontroller board. Each microcontroller 
+uses four port pins for the JTAG interface.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
