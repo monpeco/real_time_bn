@@ -643,7 +643,7 @@ uses four port pins for the JTAG interface.
 
 ___TM4C123 microcontroller___. It has 43 pins. A ___port___ is a collection of 
 pins that are grouped by function. So a microcontroller is a single-chip computer that
-has multiple pins for doing I/O. Now, our ![___LaunchPad___](http://www.ti.com/lit/ml/slau596/slau596.pdf) 
+has multiple pins for doing I/O. Now, our ![LaunchPad](http://www.ti.com/lit/ml/slau596/slau596.pdf) 
 (MSP-EXP432P401R) is a board which has the TM4C123 on it. There are two resistors on the LaunchPad labeled R9 and R10.
 And you're going to have to remove them in order to use the graphic display.
 
@@ -729,6 +729,98 @@ of interfacing, see Volume 2 of the series.
 
 Embedded Systems: Real-Time Interfacing to ARM Cortex-M Microcontrollers, 
 ISBN: 978-1463590154, Jonathan Valvano, http://users.ece.utexas.edu/~valvano/arm/outline.htm
+
+
+
+--
+--
+
+
+###MSP432 Microcontroller
+There are 84 pins on this processor, which means it has a lot of capabilities.
+
+Now, the I/O that we're going focus on in this class
+is centered around these 40 pins, which will connect up to the BoosterPack.
+Now, there are two buttons, two switches, and two LEDs on this board,
+but we won't be using them in this class.
+
+And one of the interesting features is speed. It turns out some of these sensors are really, really slow.
+The light sensor and the temperature sensor are very slow. They operate on once a second.
+And then the accelerometer is a medium-speed device, which operates and 10 to 20 times per second.
+And then the microphone is a very fast device, which operates in thousands of samples per second.
+
+
+--
+
+
+![Figure 1.18](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/2e491a5823d373dcb63e7f8a54e201da/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_18_MSP432.jpg)
+*Figure 1.18. I/O port pins for the MSP432P401R microcontroller. (Six pins on Port J not shown).*
+
+Figure 1.18 draws the I/O port structure for the MSP432P401R. This microcontroller is 
+used on the MSP-EXP432P401R LaunchPad. Pins can be configured for digital I/O, analog 
+input, timer I/O, or serial I/O. For example P1.2 can be digital I/O or serial receive input.
+
+Because of the multiple buses, the microcontroller can perform I/O bus cycles 
+simultaneous with instruction fetches from flash ROM. The MSP432P401R has four 
+UART ports, eight SPI ports, four I2C ports, a 14-bit ADC, and four timers. 
+There are 84 I/O lines. There are 24 ADC inputs, and the ADC can convert up to 1 
+million samples per second.
+
+
+![Figure 1.19](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/52bb8a68357e632882402844a09af892/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_19_MSP432_MKII.jpg)
+*Figure 1.19. I/O port pins for the MSP432 used in this class with the Educational BoosterPack MKII BOOSTXL-EDUMKII. P3.5 means Port 3 pin 5.*
+
+Figure 1.19 shows the port pin connections for the hardware using in this class. 
+There are 10 ports (1, 2, 3, … 10). You can see from this figure that many of the 
+ports share operation with multiple devices. For example, Port 3 is used for
+
+* UART to Bluetooth
+* Temperature sensor input
+* LCD output
+* Button 2 input
+
+This overlap of features must be managed by the operating system. More information 
+about the hardware/software interfaces used in this class will be presented later in section 1.6.
+
+![Figure 1.20](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/501aeb35fabfd4ae32eb885b3df15cd2/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_20_MSP432LaunchPad.jpg)
+*Figure 1.20. LaunchPad based on the MSP432P401RIPZ.*
+
+The MSP432 LaunchPad evaluation board (Figure 1.20) is a low-cost development board 
+available as part number MSP-EXP432P401R from www.ti.com and from regular electronic 
+distributors like Digikey, Mouser, element14, and Avnet. The board includes XDS110-ET, 
+an open-source onboard debugger, which allows programming and debugging of the onboard 
+MSP432 microcontroller. The USB interface is used by the debugger and includes a serial channel.
+
+--
+
+![Figure 1.21](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/405c87955aad4e665710fa1f5f0eebfd/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_21_LaunchPadCircuit.jpg)
+*Figure 1.21. Switch and LED interfaces on the LaunchPad Evaluation Board. The jumpers can be removed so the corresponding pin can be used without connection to the external circuits.*
+
+The MSP432 LaunchPad evaluation board has two switches, one 3-color LED and one red 
+LED, as shown in Figure 1.21. The switches are negative logic and will require activation 
+of the internal pull-up resistors. In this class we will not use the switches and LEDs on 
+the LaunchPad, but rather focus on the hardware provided by the MK-II BoosterPack.
+
+
+--
+
+The LaunchPad has four 10-pin connectors, labeled as J1 J2 J3 J4 in Figure 1.22, to which 
+you can attach your external signals. The top side of these connectors has male pins, and t
+he bottom side has female sockets.
+
+
+![Figure 1.22](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/f4a4ae30843e33df6810580e7239bc86/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_22_LaunchPadPins.jpg)
+*Figure 1.22. Interface connectors on the MSP432 LaunchPad Evaluation Board, 67 I/O pins.*
+
+
+In this class we will use BoosterPacks, so you will not need to connect individual wires 
+to the LaunchPad. Figure 1.24 shows the MSP432 with a CC2650 BoosterPack. There are two 
+possible CC2650 modules that could be used for Lab 6, BOOSTXL-CC2650MA or the LAUNCHXL-CC2650.
+
+![Figure 1.24](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/5b708c1caacdf92474bda9db8992c7ea/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_24_MSP432_CC2650.JPG)
+*Figure 1.24. A MSP432 LaunchPad with a BOOSTXL-CC2650MA BoosterPack.*
+
+
 
 
 
