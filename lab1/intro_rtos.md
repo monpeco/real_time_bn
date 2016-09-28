@@ -611,12 +611,12 @@ For example, port pins PA1 and PA0 on the TM4C123 can be either regular parallel
 port pins, or an asynchronous serial port called universal asynchronous 
 receiver/transmitter (UART). Some of the alternative functions used in this class are:
 
-* UART Universal asynchronous receiver/transmitter
-* SSI or SPI Synchronous serial interface or serial peripheral interface
-* I2C Inter-integrated circuit
-* Timer Periodic interrupts
-* PWM Pulse width modulation
-* ADC Analog to digital converter, measurement analog signals
+* ___UART___ Universal asynchronous receiver/transmitter
+* ___SSI___ or ___SPI___ Synchronous serial interface or serial peripheral interface
+* ___I2C___ Inter-integrated circuit
+* ___Timer___ Periodic interrupts
+* ___PWM___ Pulse width modulation
+* ___ADC___ Analog to digital converter, measurement analog signals
 
 The ___UART___ can be used for serial communication between computers. It is asynchronous 
 and allows for simultaneous communication in both directions. The ___SSI___ (also called ___SPI___) 
@@ -635,17 +635,100 @@ access port used to program and debug the microcontroller board. Each microcontr
 uses four port pins for the JTAG interface.
 
 
+--
+--
 
 
+###Tiva microcontroller (TM4C123 Microcontroller)
+
+___TM4C123 microcontroller___. It has 43 pins. A ___port___ is a collection of 
+pins that are grouped by function. So a microcontroller is a single-chip computer that
+has multiple pins for doing I/O. Now, our ![___LaunchPad___](http://www.ti.com/lit/ml/slau596/slau596.pdf) 
+(MSP-EXP432P401R) is a board which has the TM4C123 on it. There are two resistors on the LaunchPad labeled R9 and R10.
+And you're going to have to remove them in order to use the graphic display.
+
+--
+
+![Figure 1.12](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/6943111bcd0e1f4374af3393cd10ce76/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_12_TM4C123.jpg)
+*Figure 1.12. All the I/O port pins for the TM4C123GH6PM microcontroller.*
 
 
+Figure 1.12 draws the I/O port structure for the TM4C123GH6PM, the microcontroller 
+is used on the EK-TM4C123GXL LaunchPad. Pins on the TM4C family can be assigned to 
+as many as eight different I/O functions. Pins can be configured for digital I/O, 
+analog input, timer I/O, or serial I/O. For example PB4 can be a digital I/O, ADC, 
+SSI, PWM, timer or CAN pin. The TM4C123GH6PM has eight UART ports, four SSI ports, 
+four I2C ports, two 12-bit ADCs, twelve timers, two PWMs, a CAN port, and a USB 
+interface. There are 43 I/O lines. There are twelve ADC inputs; each ADC can 
+convert up to 1M samples per second.
+
+![Figure 1.13](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/e12abffeea394803ea81fbad7d2bae66/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_13_TM4C123_MKII.jpg)
+*Figure 1.13. I/O port pins for the TM4C123GH6PM used in this class with the Educational MKII BoosterPack (BOOSTXL-EDUMKII). PD7 means Port D pin 7.*
+
+Figure 1.13 shows the port pin connections for the hardware using in this class. There are six ports (A, B, C, D, E, and F). You can see from this figure that all of the ports share operation with multiple devices. For example, Port A is used for
+
+* UART to PC
+* Light sensor input
+* Temperature sensor input
+* LCD output
+
+This overlap of features must be managed by the operating system. More information 
+about the hardware/software interfaces used in this class will be presented later 
+in section 1.6.
 
 
+![Figure 1.14](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/a9251a58b46b499a63a87e3965896019/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_14CaptionedLaunchPad.jpg)
+*Figure 1.14. Tiva TM4C123 Launchpad Evaluation Board based on the TM4C123GH6PM.*
+
+Figure 1.14 shows the TM4C123 LaunchPad. In this class you can use either the 
+LaunchPad or the MSP432 LaunchPad. There are some older LaunchPads based on the 
+LM4F120, which are virtually identical with the TM4C123. If you have an LM4F120 
+system all the TM4C123 code will run on the LM4F120 without modification.
+
+Unfortunately, the TM4C123/LM4F120 LaunchPad connects PB6 to PD0, and PB7 to PD1. 
+this class you MUST remove the R9 and R10 resistor in order for the LCD to operate properly.
+
+--
+
+The TM4C123 LaunchPad evaluation board has two switches and one 3-color LED. See 
+Figure 1.15. In this class we will not use the switches and LED on the LaunchPad, 
+but rather focus on the hardware provided by the MK-II BoosterPack.
+
+![Figure 1.15](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/fa7184847b9bdd54e76c78b75a18a43f/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_15_circuit.jpg)
+*Figure 1.15. Switch and LED interfaces on the Texas Instruments TM4C123 LaunchPad Evaluation Board. The zero ohm resistors can be removed so the corresponding pin can be used for its regular purpose. The LM4F120 is similar (except for the USB interface).*
 
 
+The LaunchPad has four 10-pin connectors, labeled as J1 J2 J3 J4 in Figures 1.14 
+and 1.16, to which you can attach your external signals. The top side of these 
+connectors has male pins and the bottom side has female sockets. The intent is 
+to stack boards together to make a layered system. Texas Instruments also supplies 
+BoosterPacks, which are pre-made external devices that will plug into this 40-pin 
+connector.
 
+![Figure 1.16](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/ef6be3ef92365e8d7c40e59058dab2e9/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_16_pins.jpg)
+Figure 1.16. Interface connectors on the Texas Instruments TM4C123 LaunchPad Evaluation Board.
 
+The intent is to stack boards together to make a layered system, see Figure 1.17. 
+The engineering community has developed BoosterPacks, which are pre-made external 
+devices that will plug into this 40-pin connector. Figure 1.17 shows a system with 
+a LaunchPad and two BoosterPacks.
 
+![Figure 1.16](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/815b620593d19eed67d85e23638ad852/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_17_TM4C123_CC2650_MKII.JPG)
+Figure 1.17. A BoosterPack plugs into either the top or bottom of a LaunchPad. In this figure the CC2650 BoosterPack is on the bottom and the MKII BoosterPack is on the top.
+
+There are a number of good methods to connect external circuits to the LaunchPad. 
+One method is to purchase a male to female jumper cable (e.g., item number 826 at www.adafruit.com). 
+A second method is to solder a solid wire into a female socket (e.g., Hirose DF11-2428SCA) 
+creating a male to female jumper wire. In this class we will use BoosterPacks, 
+so you will not need to connect individual wires to the LaunchPad.
+
+It is not our goal to teach I/O interfacing in this class, but rather use the 
+I/O as a platform to develop and test real-time operating systems with Bluetooth 
+connectivity. If you would like more information on the hardware/software aspects 
+of interfacing, see Volume 2 of the series.
+
+Embedded Systems: Real-Time Interfacing to ARM Cortex-M Microcontrollers, 
+ISBN: 978-1463590154, Jonathan Valvano, http://users.ece.utexas.edu/~valvano/arm/outline.htm
 
 
 
