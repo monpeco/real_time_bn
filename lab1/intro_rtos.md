@@ -888,13 +888,13 @@ whether this is data or address depends on how the 1000 is used. The addressing 
 the instruction uses to specify the memory location to read or write data. We will see five addressing 
 modes in this class:
 
-|Address Mode|Location of Data|Example|
-|--|--|--|
-|Immediate	            |Data within the instruction	    |MOV  R0,#1|
-|Indexed	            |Data pointed to by register	    |LDR  R0,[R1]|
-|Indexed with offset	|Data pointed to by register	    |LDR  R0,[R1,#4]|
-|PC-relative	        |Location is offset relative to PC	|BL   Incr|
-|Register-list	        |List of registers	                |PUSH {R4,LR}|
+|Address Mode   |Location of Data    |Example       |
+|---------------|--------------------|--------------|
+|Immediate	         |Data within the instruction	    |MOV  R0,#1|
+|Indexed	         |Data pointed to by register	    |LDR  R0,[R1]|
+|Indexed with offset |Data pointed to by register	    |LDR  R0,[R1,#4]|
+|PC-relative	     |Location is offset relative to PC	|BL   Incr|
+|Register-list	     |List of registers	                |PUSH {R4,LR}|
 
 
 __No addressing mode__: Some instructions operate completely within the processor and require no memory data fetches. 
