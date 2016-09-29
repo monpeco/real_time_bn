@@ -913,6 +913,70 @@ __PC-relative addressing mode__: The addressing mode that uses the PC as the poi
 
 There are many more addressing modes, but for now, these few addressing modes, as illustrated below, are enough to get us started.
 
+--
+--
+
+
+###List of twelve instructions
+
+We will only need 12 assembly instructions in order to design our own real-time operating system. The following lists the load and store instructions we will need.
+
+```asm
+  LDR Rd, [Rn]     ; load 32-bit memory at [Rn] to Rd 
+  STR Rt, [Rn]     ; store Rt to 32-bit memory at [Rn] 
+  LDR Rd, [Rn, #n] ; load 32-bit memory at [Rn+n] to Rd 
+  STR Rt, [Rn, #n] ; store Rt to 32-bit memory at [Rn+n] 
+```
+
+Let M be the 32-bit value specified by the 12-bit constant #imm12. When Rd is absent for add and subtract, 
+the result is placed back in Rn. The following lists a few more instructions we will need.
+
+```asm
+  MOV   Rd, Rn         ;Rd = Rn 
+  MOV   Rd, #imm12     ;Rd = M
+  ADD   Rd, Rn, Rm     ;Rd = Rn + Rm 
+  ADD   Rd, Rn, #imm12 ;Rd = Rn + M
+  SUB   Rd, Rn, Rm     ;Rd = Rn - Rm 
+  SUB   Rd, Rn, #imm12 ;Rd = Rn - M
+  CPSID I              ;disable interrupts, I=1 
+  CPSIE I              ;enable interrupts, I=0 
+```
+
+Normally the computer executes one instruction after another in a linear fashion. In particular, the next 
+instruction to execute is typically found immediately following the current instruction. We use branch 
+instructions to deviate from this straight line path. These branches use PC-relative addressing.
+
+
+```asm
+  B  label ;branch to label 
+  BX Rm    ;branch indirect to location specified by Rm
+  BL label ;branch to subroutine at label 
+```
+
+These are the push and pop instructions we will need
+
+```asm
+  PUSH {Rn,Rm} ; push Rn and Rm onto the stack 
+  PUSH {Rn-Rm} ; push all registers from Rn to Rm onto the stack 
+  POP  {Rn,Rm} ; pop two 32-bit numbers off stack into Rn, Rm 
+  POP  {Rn-Rm} ; pop multiple 32-bit numbers off stack to Rn through Rm 
+```
+
+When pushing and popping multiple registers, it does not matter the order specified in the instruction. 
+Rather, the registers are stored in memory such that the register with the smaller number is stored at 
+the address with a smaller value. For example, consider the execution of PUSH {R1,R4-R6}. Assume the 
+registers R1, R4, R5, and R6 initially contain the values 1, 4, 5, and 6 respectively. Figure 1.26 
+shows the value from lowest-numbered R1 is positioned at the lowest stack address. If four entries 
+are popped with the POP {R0,R2,R7,R9} instruction, the value from the lowest stack address is loaded 
+into the lowest-numbered R0.
+
+![Figure 1.26](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/24c32219b93b8b5de35e388640fa20ad/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_26_stack.jpg)
+*Figure 1.26. Stack drawings showing how multiple registered are pushed and popped.*
+
+
+
+
+
 
 
 
