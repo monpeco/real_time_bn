@@ -876,5 +876,50 @@ mapping the symbolic label with the value of the operand.
 
 
 
+--
+--
+
+
+###Addressing modes
+A fundamental issue in software design is the differentiation between data and addresses. Another name 
+for address is pointer. It is in assembly language programming in general and ___addressing modes___ in 
+specific that this differentiation becomes clear. When we put the number 1000 into Register R0, 
+whether this is data or address depends on how the 1000 is used. The addressing mode is the format 
+the instruction uses to specify the memory location to read or write data. We will see five addressing 
+modes in this class:
+
+
+|Immediate	            |Data within the instruction	    |MOV  R0,#1|
+|Indexed	            |Data pointed to by register	    |LDR  R0,[R1]|
+|Indexed with offset	|Data pointed to by register	    |LDR  R0,[R1,#4]|
+|PC-relative	        |Location is offset relative to PC	|BL   Incr|
+|Register-list	        |List of registers	                |PUSH {R4,LR}|
+
+
+__No addressing mode__: Some instructions operate completely within the processor and require no memory data fetches. 
+For example, the ___ADD R1,R2,R3___ instruction performs R2+R3 and stores the sum into R1.
+
+__Immediate addressing mode__: If the data is found in the instruction itself, like ___MOV R0,#1___, the instruction 
+uses immediate addressing mode.
+
+__Indexed addressing mode__: A register that contains the address or location of data is called a pointer or index 
+register. Indexed addressing mode uses a register pointer to access memory. There are many variations of indexed 
+addressing. In this class, you will use two types of indexed addressing. The form [Rx] uses Register ___Rx as a 
+pointer___, where Rx is any of the Registers from R0 to R12. The second type you will need is called ___indexed with offset___, 
+which has the form [Rx,#n], where n is a number from -255 to 4095. This addressing mode will access memory at Rx+n, 
+without modifying Rx.
+
+__PC-relative addressing mode__: The addressing mode that uses the PC as the pointer is called PC-relative addressing mode. It is used for branching, for calling functions, and accessing constant data stored in ROM. The addressing mode is called PC-relative because the machine code contains the address difference between where the program is now and the address to which the program will access.
+
+There are many more addressing modes, but for now, these few addressing modes, as illustrated below, are enough to get us started.
+
+
+
+
+
+
+
+
+
 
 
