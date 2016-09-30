@@ -975,8 +975,19 @@ into the lowest-numbered R0.
 *Figure 1.26. Stack drawings showing how multiple registered are pushed and popped.*
 
 
+--
+--
 
 
+###Accessing memory
+
+One of the basic operations we must perform is reading and writing global variables. Since all calculations are performed in registers, we must first bring the value into a register, modify the register value, and then store the new value back into memory. Consider a simple operation of incrementing a global variable in both C and assembly language. Variables can exist anywhere in RAM, however for this illustration assume the variable count is located in memory at 0x20000100. The first LDR instruction gets a pointer to the variable in R0 as illustrated in Figure 1.27. This means R0 will have the value 0x20000100. This value is a pointer to the variable count. The way it actually works is the assembler places a constant 0x20000100 in code space and translates the =count into the correct PC-relative access to the constant (e.g., LDR R0,[PC,#28]). The second LDR dereferences the pointer to fetch the value of the variable into R1. More specifically, the second LDR will read the 32-bit contents at 0x20000100 and put it in R1. The ADD instruction increments the value, and the STR instruction writes the new value back into the global variable. More specifically, the STR instruction will store the 32-bit value from R1 into at memory at 0x20000100. The following assembly implements the C code count = count+1;
+```asm
+  LDR R0,=count
+  LDR R1,[R0] ;value of count
+  ADD R1,#1
+  STR R1,[R0] ;store new value
+```
 
 
 
