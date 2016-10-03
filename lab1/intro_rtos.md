@@ -1167,5 +1167,61 @@ void someother(void){
   
 --
 --
+
+
+###Arm Architecture Procedure Call Standart (AAPCS)
+C <--> Assembly
+This is the way control can be transfer from C to Assembly or viceversa.
+
+###AAPCS General Rules
+1. Inputs will use R0, R1, R2, R3
+2. Output will use R0
+3. R0-R3 and R12 any function ir free to use and destroy these registers
+4. R4-R11 must be preserve (by pushing them on the Stack, and then popping them off at the end)
+5. Stack aligment of 64-bits, push something, we will push (or pop) a even number of register
+
+
+The ___ARM Architecture Procedure Call Standard___, ___AAPCS___, part of the ___ARM Application Binary Interface (ABI)___, uses 
+registers ___R0___, ___R1___, ___R2___, and ___R3___ to pass input parameters into a C function. Functions must preserve the 
+values of registers ___R4–R11___. Also according to AAPCS we place the return parameter in Register ___R0___. AAPCS requires 
+we ___push and pop an even number of registers___ to maintain an 8-byte alignment on the stack. In this book, the SP will 
+always be the ___Main Stack Pointer___ (___MSP___), not the ___Process Stack Pointer___ (___PSP___). Recall that all object 
+code is ___halfword aligned___, meaning bit 0 of the PC is always clear. When the ___BL___ instruction is executed, bits 31–1 
+of register LR are loaded with the address of the instruction after the BL, and bit 0 is set to one. When the ___BX LR___ 
+instruction is executed, bits 31–1 of register LR are put back into the PC, and bit 0 of LR goes into the ___T___ bit. On the ARM 
+Cortex-M processor, the ___T___ bit should always be 1, meaning the processor is always in the Thumb state. Normally, the 
+proper value of bit 0 is assigned automatically.
+
+ARM’s ___Cortex Microcontroller Software Interface Standard___ (___CMSIS___) is a standardized hardware abstraction layer for 
+the Cortex-M processor series. The purpose of the CMSIS initiative is to standardize a fragmented industry on one superior 
+hardware and software microcontroller architecture.
+
+The ___CMSIS___ enables consistent and simple software interfaces to the processor and core MCU peripherals for silicon vendors 
+and middleware providers, simplifying software re-use, reducing the learning curve for new microcontroller developers, and 
+reducing the time to market for new devices. Learn more about CMSIS directly from ARM at www.onarm.com.
+
+The CMSIS is defined in close cooperation with various silicon and software vendors and provides a common approach to interface 
+to peripherals, real-time operating systems, and middleware components. The CMSIS is intended to enable the combination of 
+software components from multiple middleware vendors. The CMSIS components are:
+
+* ___CMSIS-CORE___: API for the Cortex-M processor core and peripherals. It provides at standardized interface for Cortex-M0, 
+Cortex-M3, Cortex-M4, SC000, and SC300. Included are also SIMD intrinsic functions for Cortex-M4 SIMD instructions.
+
+* ___CMSIS-DSP___: DSP Library Collection with over 60 Functions for various data types: fixed-point (fractional q7, q15, q31) 
+and single precision floating-point (32-bit). The library is available for Cortex-M0, Cortex-M3, and Cortex-M4. 
+The Cortex-M4 implementation is optimized for the SIMD instruction set.
+
+* ___CMSIS-RTOS API___: Common API for Real-Time operating systems. It provides a standardized programming interface that is 
+portable to many RTOS and enables software templates, middleware, libraries, and other components that can work across 
+supported RTOS systems.
+
+* ___CMSIS-SVD___: System View Description for Peripherals. Describes the peripherals of a device in an XML file and can be 
+used to create peripheral awareness in debuggers or header files with peripheral register and interrupt definitions.
+
+
+What is the purpose of AAPCS?
+Standards allows software written by one company to work properly with software written by another company. A similar concept 
+is CMSIS, which allows the standardization of I/O functions, see http://www.keil.com/pack/doc/CMSIS/General/html/index.html
+
   
   
