@@ -981,21 +981,89 @@ into the lowest-numbered R0.
 
 ###Accessing memory
 
-One of the basic operations we must perform is reading and writing global variables. Since all calculations are performed in registers, we must first bring the value into a register, modify the register value, and then store the new value back into memory. Consider a simple operation of incrementing a global variable in both C and assembly language. Variables can exist anywhere in RAM, however for this illustration assume the variable count is located in memory at 0x20000100. The first LDR instruction gets a pointer to the variable in R0 as illustrated in Figure 1.27. This means R0 will have the value 0x20000100. This value is a pointer to the variable count. The way it actually works is the assembler places a constant 0x20000100 in code space and translates the =count into the correct PC-relative access to the constant (e.g., LDR R0,[PC,#28]). The second LDR dereferences the pointer to fetch the value of the variable into R1. More specifically, the second LDR will read the 32-bit contents at 0x20000100 and put it in R1. The ADD instruction increments the value, and the STR instruction writes the new value back into the global variable. More specifically, the STR instruction will store the 32-bit value from R1 into at memory at 0x20000100. The following assembly implements the C code count = count+1;
+One of the basic operations we must perform is reading and writing global variables. Since all calculations are performed 
+in registers, we must first bring the value into a register, modify the register value, and then store the new value back 
+into memory. Consider a simple operation of incrementing a global variable in both C and assembly language. Variables
+can exist anywhere in RAM, however for this illustration assume the variable count is located in memory at 0x20000100. 
+* The first LDR instruction gets a pointer to the variable in R0 as illustrated in Figure 1.27. This means R0 will have the 
+value 0x20000100. This value is a pointer to the variable count. The way it actually works is the assembler places a 
+constant 0x20000100 in code space and translates the =count into the correct PC-relative access to the constant 
+(e.g., LDR R0,[PC,#28]). 
+* The second LDR dereferences the pointer to fetch the value of the variable into R1. 
+More specifically, the second LDR will read the 32-bit contents at 0x20000100 and put it in R1. 
+* The ADD instruction  increments the value,
+* and the STR instruction writes the new value back into the global variable. More specifically, 
+the STR instruction will store the 32-bit value from R1 into at memory at 0x20000100. The following assembly implements 
+the C code count = count+1;
+
 ```asm
   LDR R0,=count
   LDR R1,[R0] ;value of count
   ADD R1,#1
   STR R1,[R0] ;store new value
 ```
+![Figure 1.27](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/fc0ed534c07c91edb33bc7b2fd506839/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_27_IndexedAddressing.jpg)
+*Figure 1.27. Indexed addressing using R0 as a register pointer to access memory. Data is moved into R1. Code space is where we place programs, and data space is where we place variables. The dotted arrows in this figure represent the motion of information, and the solid arrow is a pointer.*
+
+Let's work through code similar to what we will use in Chapter 2 as part of our operating system. The above 
+example used ___indexed addressing___ with an implicit offset of 0. However, you will also need to understand 
+___indexed addressing with an explicit offset___. In this example, assume ___RunPt___ points to a linked list as 
+shown in Figure 1.28. A node of the list is a structure (struct in C) with multiple entries of different types. 
+A linked list is a set of nodes where one of the entries of the node is a pointer or link to another node of the 
+same type. In this example, the second entry of the list is a pointer to the next node in the list. Figure 1.28 
+shows three of many nodes that are strung together in a sequence defined by their pointers.
+
+![Figure 1.28](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/b0a776b3ea8a5ce960a2c77992c189fa/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_28_ListedListIndexedAddressing.jpg)
+Figure 1.28. A linked list where the second entry is a pointer to the next node. Arrows are pointers or links, and dotted lines are used to label components in the figure
+
+As our operating system runs it will need to traverse the list. RunPt will always points to a node in the list. 
+However, we may wish to change it to point to the next node in the list. In C, we would execute RunPt=RunPt->next; 
+However, in assembly this translates to
+
+```asm
+   LDR  R1,=RunPt   ; R1 points to variable RunPt, using PC-relative
+   LDR  R0,[R1]     ; R0= value of variable RunPt
+   LDR  R2,[R0,#4]  ; next entry
+   STR  R2,[R1]     ; update RunPt
+```
+
+Figure 1.29 draws the action caused by above the four instructions. Assume initially RunPt points to the middle node of the list. 
+Each entry of the node is 32 bits or four bytes of memory. The first two instructions read the value of RunPt into R0. 
+Since RunPt points to the middle node in the linked list in this figure, R0 will also point to this node. Since each entry is 
+4 bytes, R0+4 points to the second entry, which is the next pointer. The instruction LDR R2,[R0,#4] will read the 32-bit value 
+pointed to by R0+4 and place it in R2. Even though the memory address is calculated as R0+4, the Register R0 itself is not 
+modified by this instruction. R2 now points to the right-most node in the list. The last instruction updates RunPt so it now 
+points to the right-most node shown in the Figure 1.29.
+
+![Figure 1.29](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/d0cd2038ff347e0d1a22acc8bc9125ca/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_29_IndexedAddressing.jpg)
+*Figure 1.29. An example of indexed addressing mode with offset, data is in memory. Arrows in this figure represent pointers (not the motion of information).*
+
+___A really important concept___. We use the LDR instruction to load data from RAM to a register and the STR instruction to store 
+data from a register to RAM. In real life, when we move a box to the basement, push a broom across the floor, load bags into the 
+trunk, store spoons in a drawer, pop a candy into your mouth, or transfer employees to a new location, there is a physical object 
+and the action changes the location of that object. Assembly language uses these same verbs, but the action will be different. In 
+most cases, the processor creates a copy of the data and places the copy at the new location. In other words, since the original 
+data still exists in the previous location, there are now two copies of the information. The exception to this 
+memory-access-creates-two-copies-rule is a stack pop. When we pop data from the stack, it no longer exists on the stack leaving us 
+just one copy. Having the information in two places will create a very tricky problem that our operating system must handle.
+
+Let’s revisit the simple example of incrementing a global variable. In C, the code would be count=count+1; In assembly, the compiler 
+creates code like this:
+
+```asm
+   LDR R0,=count
+   LDR R1,[R0]    ;value of count
+;two copies of count: in memory and in R1
+   ADD R1,#1
+;two copies of count with different values
+   STR R1,[R0]    ;store new value
+```
+
+The instruction ___LDR R1,[R0]___ loads the contents of the variable count into R1. At this point, there are two copies of the data, 
+the original in RAM and the copy in R1. After the ADD instruction, the two copies have different values. When designing an 
+operating system, we will take special care to handle shared information stored in global RAM, making sure we access the 
+proper copy. In Chapter 2, we will discuss in detail the concept of ___race conditions___ and ___critical sections___. 
+These very important problems arise from the problem generated by this concept of having multiple copies of information.
 
 
-
-
-
-
-
-
-
-
-
+  
