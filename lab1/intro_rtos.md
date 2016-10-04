@@ -1238,8 +1238,8 @@ output it has LEDs, a buzzer and a color LCD display.
 ###Showing the code
 
 This course deals with creating a real-time operating system for embedded systems. One of the important resources the OS must manage 
-is I/O. It is good design practice to provide an abstraction for the I/O layer. Three equivalent names for this abstraction are hardware 
-abstraction layer (HAL), device driver, and board support package (BSP). From an operating system perspective, the goal is the make it 
+is I/O. It is good design practice to provide an abstraction for the I/O layer. Three equivalent names for this abstraction are ___Hardware 
+Abstraction Layer (HAL)___, device driver, and ____Board Support Package (BSP)___. From an operating system perspective, the goal is the make it 
 easier to port the system from one hardware platform to another. The system becomes more portable if we create a BSP for our hardware 
 devices. We provide a BSP for the MKII BoosterPack that encapsulates the following:
 
@@ -1263,13 +1263,27 @@ You can also review the <a href="https://d37djvu3ytnwxt.cloudfront.net/assets/co
 
 
 
+--
+--
+
+###Buttons
+
+![Buttons](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/d1776f64af5dae05d154948f5da07acf/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/BSP_buttons.jpg)
+
+The initialization functions configure the I/O port for the two buttons [MJTP1212A_button.pdf](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/f3574f5125caa28b81558df5752fe934/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/MJTP1212A_button.pdf). 
+The input functions return the current status of the buttons. For information on how to use the functions, 
+see the ___BSP.h___ file and look for functions that begin with BSP_Button. For information on how 
+the interface operates, see the ___BSP.c___ file and the data sheet for your microcontroller.
 
 
+###Joystick
 
+![Joystick](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/16d604cbeba9205efda33ec595333241/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/BSP_joystick.jpg)
 
-
-
-
-
-
-
+The joystick has two potentiometers and a momentary switch [IM130330001Joystick.pdf](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/561a4d7f2bcec8e839948d4f75da2d5c/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/IM130330001Joystick.pdf). One analog input is a
+function of the X-position of the joystick and another analog input is a function of the Y-position. 
+The microcontroller uses its analog to digital converter (ADC) to measure the joystick position. The 
+initialization functions configure the I/O ports for the joystick. The input functions return the current 
+status of the joystick. For information on how to use the functions, see the BSP.h file and look for functions 
+that begin with BSP_Joystick. For information on how the interface operates, see the BSP.c file and 
+the data sheet for the joystick and for your microcontroller.
