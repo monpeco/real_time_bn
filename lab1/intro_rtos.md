@@ -1258,10 +1258,11 @@ One of the advantages of this BSP is the operating systems we create together in
 This class provides just enough information to understand what the I/O does, so that you can focus on the operating system.
 
 If you want to understand how the I/O devices work, you should print its circuit diagram on pages 17 and 18 of the MKII Users Guide 
-(MK-II_CircuitDiagram.pdf). You can also review the MK-II_usersGuide.pdf.
+[MK-II_CircuitDiagram.pdf](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/ffcfd13a81c05c9264813d1078aadf59/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/MK-II_CircuitDiagram.pdf){:target="_blank"}.
+You can also review the [MK-II_usersGuide.pdf](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/3d969619c88dfd53e5f9dce06facb83a/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/MK-II_usersGuide.pdf){:target="_blank"}.
 
-[MK-II_CircuitDiagram.pdf](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/ffcfd13a81c05c9264813d1078aadf59/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/MK-II_CircuitDiagram.pdf)
-[MK-II_usersGuide.pdf](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/3d969619c88dfd53e5f9dce06facb83a/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/MK-II_usersGuide.pdf)
+
+
 
 
 
