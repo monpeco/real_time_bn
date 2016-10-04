@@ -1231,11 +1231,17 @@ The purpose of using a BoosterPack in this course is to provide a rich set of in
 ![Figure 1.31](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/3b959d4b64a236bfbaae81981d6d8e65/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/fig01_31_kit.JPG)
 Figure 1.31. The lab hardware includes a LaunchPad, either a TM4C123 (EK-TM4C123GXL) or an MSP432 (MSP-EXP432P401R), together with an Educational BoosterPack MKII (BOOSTXL-EDUMKII).
 
-The MKII provides a number of sensors that necessitate real-time processing: microphone for sound, temperature, 3-axis acceleration, and a light sensor. Furthermore, it has some I/O devices to interact with a human. For input it has buttons and a joystick, and for output it has LEDs, a buzzer and a color LCD display.
+The MKII provides a number of sensors that necessitate real-time processing: microphone for sound, temperature, 3-axis acceleration, 
+and a light sensor. Furthermore, it has some I/O devices to interact with a human. For input it has buttons and a joystick, and for 
+output it has LEDs, a buzzer and a color LCD display.
 
 ###Showing the code
 
-This course deals with creating a real-time operating system for embedded systems. One of the important resources the OS must manage is I/O. It is good design practice to provide an abstraction for the I/O layer. Three equivalent names for this abstraction are hardware abstraction layer (HAL), device driver, and board support package (BSP). From an operating system perspective, the goal is the make it easier to port the system from one hardware platform to another. The system becomes more portable if we create a BSP for our hardware devices. We provide a BSP for the MKII BoosterPack that encapsulates the following:
+This course deals with creating a real-time operating system for embedded systems. One of the important resources the OS must manage 
+is I/O. It is good design practice to provide an abstraction for the I/O layer. Three equivalent names for this abstraction are hardware 
+abstraction layer (HAL), device driver, and board support package (BSP). From an operating system perspective, the goal is the make it 
+easier to port the system from one hardware platform to another. The system becomes more portable if we create a BSP for our hardware 
+devices. We provide a BSP for the MKII BoosterPack that encapsulates the following:
 
 * Button input
 * Joystick input
@@ -1248,13 +1254,14 @@ This course deals with creating a real-time operating system for embedded system
 * Temperature sensor input
 * The processor clock
 
-One of the advantages of this BSP is the operating systems we create together in class will actually run on either the MSP432 or the TM4C123. This class provides just enough information to understand what the I/O does, so that you can focus on the operating system.
+One of the advantages of this BSP is the operating systems we create together in class will actually run on either the MSP432 or the TM4C123. 
+This class provides just enough information to understand what the I/O does, so that you can focus on the operating system.
 
-If you want to understand how the I/O devices work, you should print its circuit diagram on pages 17 and 18 of the MKII Users Guide (MK-II_CircuitDiagram.pdf). You can also review the MK-II_usersGuide.pdf.
+If you want to understand how the I/O devices work, you should print its circuit diagram on pages 17 and 18 of the MKII Users Guide 
+(MK-II_CircuitDiagram.pdf). You can also review the MK-II_usersGuide.pdf.
 
-
-![MK-II_CircuitDiagram.pdf](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/ffcfd13a81c05c9264813d1078aadf59/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/MK-II_CircuitDiagram.pdf)
-![MK-II_usersGuide.pdf](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/3d969619c88dfd53e5f9dce06facb83a/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/MK-II_usersGuide.pdf)
+[MK-II_CircuitDiagram.pdf](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/ffcfd13a81c05c9264813d1078aadf59/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/MK-II_CircuitDiagram.pdf)
+[MK-II_usersGuide.pdf](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/3d969619c88dfd53e5f9dce06facb83a/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/MK-II_usersGuide.pdf)
 
 
 
