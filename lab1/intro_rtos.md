@@ -1287,3 +1287,174 @@ initialization functions configure the I/O ports for the joystick. The input fun
 status of the joystick. For information on how to use the functions, see the BSP.h file and look for functions 
 that begin with BSP_Joystick. For information on how the interface operates, see the BSP.c file and 
 the data sheet for the joystick and for your microcontroller.
+
+
+###LEDs
+
+![LEDs](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/72a40ab061fab668a5f7bc8cd24f947b/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/BSP_LED.jpg)
+
+The MK-II has a 3-color LED [CLV1AFKB_LED.pdf](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/22c2f4ef1fa3be46995482cf6476191e/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/CLV1AFKB_LED.pdf). 
+The initialization functions configure the I/O port for the LED. The output function sets the color of the LED. 
+For information on how to use the functions, see the BSP.h file and look for functions that begin with BSP_RGB. 
+For information on how the interface operates, see the BSP.c file and the data sheet for the LED and for your 
+microcontroller.
+
+
+
+
+###Buzzer output
+
+![Buzzer output](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/bb7270fa5b7120f3885e797e962a4461/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/BSP_buzzer.jpg)
+
+There is a buzzer on the MK-II. For more information, see the CEM1203 data sheet ([cem1203buzzer.pdf](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/c082ad926bd5b20132aa69bbb63c2e46/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/cem1203buzzer.pdf) ). 
+The digital control can set the loudness, but not the pitch. Outputting zero turns it off, and outputting one sets it at max loudness. 
+Pulse width modulation (PWM) is a mechanism to adjust power to a device. In this interface the digital output is a wave with a fixed 
+frequency of 2048 Hz (488us), but the software can set the duty cycle. For example, if the digital signal is high for 122us and low 
+for 366us, the buzzer will be at 25% loudness. Duty cycle is defined as the time the signal is high divided by the total period of 
+the wave. The initialization functions configure the I/O port for the buzzer. The output function sets the duty cycle of the PWM output. 
+For information on how to use the functions, see the BSP.h file and look for functions that begin with BSP_Buzzer. For information on 
+how the interface operates, see the BSP.c file and the data sheet for the buzzer and for your microcontroller.
+
+
+
+
+###Accelerometer for motion
+
+![Accelerometer for motion](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/a34f34a8a5449c0052d8e33786be7f2c/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/BSP_acceleration.jpg)
+
+The MK-II has a 3-axis accelerometer. For more information, see the KXTC9-2050 data sheet ([KXTC9-2050Accelerometer.pdf](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/fb929b9b04cc5f78906322edf1a85a85/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/KXTC9-2050Accelerometer.pdf) ). 
+The X,Y,Z parameters are provided by three analog signals. The microcontroller uses its analog to digital converter (ADC) to measure acceleration. 
+The initialization functions configure the I/O ports for the accelerometer. The input function performs an ADC conversion and returns the X,Y,Z 
+acceleration data. For information on how to use the functions, see the BSP.h file and look for functions that begin with BSP_Accelerometer. 
+For information on how the interface operates, see the BSP.c file and the data sheet for your microcontroller.
+
+
+
+
+###ADC Microphone for sound
+
+![ADC Microphone for sound](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/1f843bbd518f66e25340d90c84b96f7d/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/BSP_microphone.jpg)
+
+The MK-II has a microphone for measuring sound. For more information, see the MK-II circuit diagram (MK-II_CircuitDiagram.pdf) and the microphone data sheet 
+([cma-4544pf_microphone.pdf](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/03caa94e30fae7521bfcca43630f7f6b/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/cma-4544pf_microphone.pdf)). 
+The microcontroller uses its analog to digital converter (ADC) to measure sound. The initialization functions configure the I/O ports for the ADC. 
+The input function performs an ADC conversion and returns the sound amplitude. Normally, we sample sound at 10 to 44 kHz and process the data to 
+detect particular sounds. In this class, we will collect multiple sound samples at at a fast rate and use this buffer of sound data to measure the 
+overall amplitude of the sound. Let x(i) be the measured sound data for i = 0 to n-1, where n=1000.
+  >  Ave = (x(0)+x(1)+x(2)+…x(n-1))/n
+    Rms =sqrt( ( (x(0)-Ave)^2+(x(1)-Ave)^2+…(x(n-1)-Ave)^2)/n )
+Fitting into the theme of safety and fitness, the parameter the sound amplitude is a measure of occupational safety. For more information on occupational safety see
+https://www.osha.gov/pls/oshaweb/owadisp.show_document?p_table=STANDARDS&p_id=9735
+https://www.osha.gov/Publications/laboratory/OSHAfactsheet-laboratory-safety-noise.pdf
+For information on how to use the functions, see the BSP.h file and look for functions that begin with BSP_Microphone. For information on how the interface operates, see the BSP.c file and the data sheet for your microcontroller.
+
+
+
+
+
+
+
+
+###LCD for graphics
+
+![LCD for graphics](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/8699b3aac97d2c00f8a7440691374680/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/BSP_LCD.jpg)
+
+The MK-II has a color LCD for plotting data, drawing images, outputting text, and displaying numbers. There are a wide range of functions. 
+The best way to learn how the LCD works is to first briefly review the available functions in BSP.h that begin with BSP_LCD. Next, you can 
+look at example main programs that use the driver for display. The BoardSupportPackage project illustrates using the LCD to output text 
+and numbers. The Lab1 starter project uses the LCD for both text and graphics. In Lab 4 we will use the LCD to display graphics for a 
+hand-held game. The LCD is 128 by 128 pixels. The location (0,0) is in the upper left, (127,0) is upper right, (0,127) is lower left, 
+and (127,127) is lower right. Each color pixel is 16 bits in RGB format of 5-6-5 bits. The BSP.h defines some standard colors
+
+
+```c
+//color constants                red grn blue
+#define LCD_BLACK      0x0000 //   0,   0,   0
+#define LCD_BLUE       0x001F //   0,   0, 255
+#define LCD_DARKBLUE   0x34BF //  50, 150, 255
+#define LCD_RED        0xF800 // 255,   0,   0
+#define LCD_GREEN      0x07E0 //   0, 255,   0
+#define LCD_LIGHTGREEN 0x07EF //   0, 255, 120
+#define LCD_ORANGE     0xFD60 // 255, 175,   0
+#define LCD_CYAN       0x07FF //   0, 255, 255
+#define LCD_MAGENTA    0xF81F // 255,   0, 255
+#define LCD_YELLOW     0xFFE0 // 255, 255,   0
+#define LCD_WHITE      0xFFFF // 255, 255, 255
+```
+
+
+###Light and temperature sensors
+
+![Light and temperature sensors](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/8c9882616424ef58b5c13fe1a413a64e/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/BSP_I2C_Light_Temperature.jpg)
+
+[]()
+
+The MK-II has light and temperature sensors. For more information on the light sensor, see the OPT3001 data sheet ([opt3001.pdf](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/5840b0a9d4d806bdbe73c7c15ebc0dc6/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/opt3001.pdf) ). 
+For more information on the temperature sensor, see the TMP006 data sheet ([tmp006.pdf](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/bf87da67e00ccd76f712410d00c32cf6/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/tmp006.pdf) ). 
+Both sensors are integrated solutions implementing the sensor and interface electronics into a single package. Both use ___I2C___ 
+communication to interface to the microcontroller. To take a measurement, the microcontroller issues a start command. Both sensors are extremely slow. 
+The light sensor takes about 800 ms to convert. For example, to measure light we could execute
+
+```c
+   BSP_LightSensor_Start();
+   done = 0;     // it will take 800 ms to finish
+   while(done==0){
+     done = BSP_LightSensor_End(&lightData);
+   }
+```
+
+The temperature sensor takes about 1 second to convert. Similarly, to measure temperature we could execute
+
+```c
+   BSP_TempSensor_Start();
+   done = 0;      // it will take 1000 ms to finish
+   while(done==0){
+     done = BSP_TempSensor_End(&tempData);
+   }
+```
+The initialization functions configure the I/O ports for the light and temperature sensors. For information on how to use the functions, 
+see the BSP.h file and look for functions that begin with BSP_LightSensor and BSP_TempSensor. For information on how the interface 
+operates, see the BSP.c file and the data sheet for your microcontroller.
+
+The MK-II sensors pose two very interesting challenges for this class. The first problem is synchronization. Even though temperature 
+and light are fundamentally separate and independent parameters, the two sensors reside on the same I2C bus, therefore the software must 
+manage these two devices in a coordinated fashion so that light and temperature activities do not interact with each other. The RTOS 
+will need a mechanism to allow mutual exclusive access to the I2C bus. In a similar manner, the accelerometer, joystick and microphone 
+all share the same ADC. Therefore the RTOS must coordinate access to the ADC. The second challenge is timing. The labs will have three 
+categories of devices
+
+* Fast, on the order of 1 to 100us: switches, LED, and microphone
+* Medium, on the order of 1 to 10ms: joystick and buzzer
+* Slow, on the order of 1s: light and temperature
+
+
+
+
+###Processor clock
+
+In order to make the labs in this class run on either the MSP432 or the TM4C123 we did three things. First, we created the BSP described in 
+this section so the I/O interface to the MK-II has the same set of functions. In particular, the BSP.h for the MSP432 is the same as the BSP.h 
+for the TM4C123.
+
+Second, we created common I/O port definitions for the core elements like SysTick, PendSV and the nested vectored interrupt controller (NVIC). 
+These definitions can be found in CortexM.h and CortexM.c. The names of these registers do not match either the TM4C123 or MSP432 definitions 
+found in the Texas Instruments software examples. However the operation of the registers and the meaning of each bit obviously match, because 
+these CortexM functions are implemented by ARM and exist on every Cortex M. For example, the following table shows the register names for the 
+SysTick registers.
+
+
+| Register	| TM4C123	| MSP432 |    |
+| --------- | ------- | ------ | -- |
+| Current	  | NVIC_ST_CURRENT_R	 | SYSTICK_STCVR	 | STCURRENT |
+| Control	  | NVIC_ST_CTRL_R	   | SYSTICK_STCSR	 |  STCTRL   |
+| Reload	  | NVIC_ST_RELOAD_R	 | SYSTICK_STRVR	 |  STRELOAD |
+
+
+Third, we abstracted time by implementing BSP_Clock functions. The MSP432 and TM4C123 run at different speed. After executing ___BSP_Clock_InitFastest___, 
+the MSP432 will run at 48 MHz. After executing this function on the TM4C123, the processor will be running at 80 MHz. The BSP maintains a 32-bit timer 
+with a common resolution of 1us regardless of whether you are running on a MSP432 or TM4C123. For example, to initialize the timer, execute 
+___BSP_Clock_InitFastest___ and ___BSP_Time_Init___. Now to measure the current time, one calls ___BSP_Time_Get___, which will return the current 
+system time in us. This system time does rollover every 71 minutes. Another time feature that runs similarly on both the MSP432 and the TM4C123 
+is ___BSP_Delay1ms___. You can call this function to delay the specified number of ms.
+
+
