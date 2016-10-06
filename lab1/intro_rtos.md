@@ -1341,8 +1341,10 @@ The microcontroller uses its analog to digital converter (ADC) to measure sound.
 The input function performs an ADC conversion and returns the sound amplitude. Normally, we sample sound at 10 to 44 kHz and process the data to 
 detect particular sounds. In this class, we will collect multiple sound samples at at a fast rate and use this buffer of sound data to measure the 
 overall amplitude of the sound. Let x(i) be the measured sound data for i = 0 to n-1, where n=1000.
-  >  Ave = (x(0)+x(1)+x(2)+…x(n-1))/n
-    Rms =sqrt( ( (x(0)-Ave)^2+(x(1)-Ave)^2+…(x(n-1)-Ave)^2)/n )
+
+  *  Ave = (x(0)+x(1)+x(2)+…x(n-1))/n
+  *  Rms =sqrt( ( (x(0)-Ave)^2+(x(1)-Ave)^2+…(x(n-1)-Ave)^2)/n )
+
 Fitting into the theme of safety and fitness, the parameter the sound amplitude is a measure of occupational safety. For more information on occupational safety see
 https://www.osha.gov/pls/oshaweb/owadisp.show_document?p_table=STANDARDS&p_id=9735
 https://www.osha.gov/Publications/laboratory/OSHAfactsheet-laboratory-safety-noise.pdf
@@ -1443,8 +1445,8 @@ these CortexM functions are implemented by ARM and exist on every Cortex M. For 
 SysTick registers.
 
 
-| Register	| TM4C123	| MSP432 |    |
-| --------- | ------- | ------ | -- |
+| Register	| TM4C123	| MSP432 |  (blank)  |
+| --------- | ------- | ------ | ------ |
 | Current	  | NVIC_ST_CURRENT_R	 | SYSTICK_STCVR	 | STCURRENT |
 | Control	  | NVIC_ST_CTRL_R	   | SYSTICK_STCSR	 |  STCTRL   |
 | Reload	  | NVIC_ST_RELOAD_R	 | SYSTICK_STRVR	 |  STRELOAD |
@@ -1456,5 +1458,55 @@ with a common resolution of 1us regardless of whether you are running on a MSP43
 ___BSP_Clock_InitFastest___ and ___BSP_Time_Init___. Now to measure the current time, one calls ___BSP_Time_Get___, which will return the current 
 system time in us. This system time does rollover every 71 minutes. Another time feature that runs similarly on both the MSP432 and the TM4C123 
 is ___BSP_Delay1ms___. You can call this function to delay the specified number of ms.
+
+
+--
+--
+
+###Pointers
+
+At the assembly level, we implement pointers using indexed addressing mode. For example, a register contains an address, and the instruction reads or writes memory specified by that address. Basically, we place the address into a register, then use indexed addressing mode to access the data. In this case, the register holds the pointer. Figure 1.32 illustrates three examples that utilize pointers. In this figure, Pt SP GetPt PutPt are pointers, where the arrows show to where they point, and the shaded boxes represent data. An array or string is a simple structure containing multiple equal-sized elements. We set a pointer to the address of the first element, then use indexed addressing mode to access the elements inside. We have introduced the stack previously, and it is an important component of an operating system. The stack pointer (SP) points to the top element on the stack. A linked list contains some elements that are pointers themselves. The pointers are used to traverse the data structure. Linked lists will be used in Chapter 2 to maintain the states of threads in our RTOS. The first in first out (FIFO) queue is an important data structure for I/O programming because it allows us to pass data from one module to another. One module puts data into the FIFO and another module gets data out of the FIFO. There is a GetPt that points to the oldest data (to be removed next) and a PutPt that points to an empty space (location to be stored into next). The FIFO queue will be presented in detail in Chapter 3.
+
+
+![Figure 1.32](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/744430b87c3073dcffe2477039e7e093/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_32dataStructures.jpg)
+Figure 1.32. Examples of data structures that utilize pointers.
+
+We will illustrate the use of pointers with some simple examples. Consider that we have a global variable called Count. This creates a 32-bit space in memory to contain the value of this variable. The int declaration means “is a signed 32-bit integer”.
+```c
+int Count;
+```
+There are three phases to using pointers: creation, initialization, usage. To create a pointer, we define a variable placing the * before its name. As a convention, we will use "p", "pt", or "ptr" in the variable name to signify it is a pointer variable. The * means "is a pointer to". Therefore, int * means “is a pointer to a signed 32-bit integer”.
+```c
+int *cPt;
+```
+To initialize a pointer, we must set it to point to something. Whenever we make an assignment in C, the type of the value must match the type of the variable. The following executable code, makes cPt point to Count. We see the type of Count is signed 32-bit integer, so the type of &Count is a pointer to a signed 32-bit integer.
+```c
+cPt = &Count;
+```
+Assume we have another variable called x, and assume the value of Count is 42. Using the pointer is called dereferencing. If we place a *cPt inside an expression, then *cPt is replaced with the value at that address. So this operation will set x equal to 42.
+```c
+x = *cPt;
+```
+If we place a *cPt as the assignment, then the value of the expression is stored into the memory at the address of the pointer. So, this operation will set Count equal to 5;
+```c
+*cPt = 5;
+```
+We can use the dereferencing operator in both the expression and as the assignment. These operations will increment Count.
+```c
+   *cPt = *cPt + 1;
+   *cPt += 1;
+   (*cPt)++;
+```
+This operation will not increment Count. Rather, it fetches Count and increments the pointer.
+```c
+   *cPt++;
+```
+Functions that require data to passed by the value they hold are said to use call-by-value parameter passing. With an input parameter using call by value, the data itself is passed into the function. For an output parameter using return by value, the result of the function is a value, and the value itself is returned. According to AAPCS, the first four input parameters are passed in R0 to R3 and the output parameter is returned in R0. Alternatively, if you pass a pointer to the data, rather than the data itself, we will be able to pass large amounts of data. Passing a pointer to data is classified as call-by-reference. For large amounts of data, call by reference is faster, because the data need not be copied from calling program to the called subroutine. In call by reference, the one copy of the data exists in the calling program, and a pointer to it is passed to the subroutine. In this way, the subroutine actually performs read/write access to the original data. Call by reference is also a convenient mechanism to return data as well. Passing a pointer to an object allows this object (a primitive data type like char, int, or a collection like an array, or a composite struct data type) to be an input parameter and an output parameter. Our real-time operating system will make heavy use of pointers. In this example, the function is allowed to read and write the original data:
+```c
+void Increment(int *cpt){
+   (*cpt)= (*cpt)+1; // read, modify, write to original data
+}
+```
+We will also use pointers for arrays, linked-lists, stacks, and first-in-first-out queues. If your facility with pointers is weak, we suggest you review pointers. Chapter 7 of the following ebook teaches pointers and their usage http://users.ece.utexas.edu/~valvano/embed/toc1.htm.
 
 
