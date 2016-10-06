@@ -1469,7 +1469,7 @@ At the assembly level, we implement pointers using indexed addressing mode. For 
 
 
 ![Figure 1.32](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/744430b87c3073dcffe2477039e7e093/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_32dataStructures.jpg)
-Figure 1.32. Examples of data structures that utilize pointers.
+*Figure 1.32. Examples of data structures that utilize pointers.*
 
 We will illustrate the use of pointers with some simple examples. Consider that we have a global variable called Count. This creates a 32-bit space in memory to contain the value of this variable. The int declaration means “is a signed 32-bit integer”.
 ```c
@@ -1508,5 +1508,158 @@ void Increment(int *cpt){
 }
 ```
 We will also use pointers for arrays, linked-lists, stacks, and first-in-first-out queues. If your facility with pointers is weak, we suggest you review pointers. Chapter 7 of the following ebook teaches pointers and their usage http://users.ece.utexas.edu/~valvano/embed/toc1.htm.
+
+--
+--
+
+###Arrays
+
+Figure 1.33 shows an array of the first ten prime numbers stored as 32-bit integers, we could allocate the structure in ROM using
+```c
+  int const Primes[10]={1,2,3,5,7,11,13,17,19,23};
+```  
+![Figure 1.33](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/a014c6ed37d5b73f92c7175ade995c9e/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/fig01_33arrays.jpg)
+Figure 1.33. Array of ten 32-bit values.
+
+By convention, we define Primes[0] as the first element, Primes[1] as the second element, etc. The address of the first element can be written as &Primes[0] or just Primes. In C, if we want the 5th element, we use the expression Primes[4] to fetch the 7 out of the structure. In C the following two expressions are equivalent, both of which will fetch the contents from the 5th element.
+```c
+  Primes[4]
+  *(Primes+4)
+```
+In C, we define a pointer to a signed 32-bit constant as
+```c
+int const *Cpt;
+```
+In this case, the const does not indicate the pointer is fixed. Rather, the pointer refers to constant 16-bit data in ROM. We initialize the pointer at run time using
+```c
+  Cpt = Primes;    // Cpt points to Primes
+```  
+or
+```c
+  Cpt = &Primes[0]; // Cpt points to Primes
+```
+
+![Figure 1.34](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/0cee1279e71569fa54b7dafd512e297f/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/fig01_34arrays.jpg)
+Figure 1.34. Cpt is a pointer to an array of ten 32-bit values.
+
+When traversing an array, we often wish to increment the pointer to the next element. To move the pointer to the next element, we use the expression Cpt++. In C, Cpt++, which is the same thing as Cpt = Cpt+1; actually adds four to the pointer because it points to 32-bit words. If the array contained 8-bit data, incrementing the pointer would add 1. If the array contained 16-bit data, incrementing the pointer adds 2. The pointers themselves are always 32-bits on the ARM, but the data could be 1, 2, 4, 8 … bytes.
+
+As an example, consider the situation where we wish to pass a large amount of data into the function BubbleSort. In this case, we have one or more buffers, defined in RAM, which initially contains data in an unsorted fashion. The buffers shown here are uninitialized, but assume previously executed software has filled these buffers with corresponding voltage and pressure data. In C, we could have
+```c
+uint8_t VBuffer[100]; // voltage data
+uint8_t PBuffer[200]; // pressure data
+```
+Since the size of these buffers is more than will fit in the registers, we will use call by reference. In C, to declare a parameter call by reference we use the *.
+```c
+void BubbleSort(uint8_t *pt, uint32_t size){
+   uint32_t i,j; uint8_t data,*p1,*p2;
+   for(i=1; i<size; i++){
+     p1 = pt; // pointer to beginning
+     for(j=0; j<size-i; j++){
+       p2 = p1+1; // p2 points to the element after p1
+       if(*p1 > *p2){
+         data = *p1; // swap
+         *p1 = *p2;
+         *p2 = data;
+       }
+      p1++; 
+    }
+  }
+}
+```c
+To invoke a function using call by reference we pass a pointer to the object. These two calling sequences are identical, because in C the array name is equivalent to a pointer to its first element (VBuffer ≡ VBuffer[0]). Recall that the & operator is used to get the address of a variable.
+
+```c
+void main(void){
+BubbleSort(Vbuffer,100);
+BubbleSort(Pbuffer,200);
+}
+```
+
+```c
+void main(void){
+BubbleSort(&VBuffer[0],100);
+BubbleSort(&PBuffer[0],200);
+}
+```
+
+One advantage of call by reference in this example is the same buffer can be used also as the return parameter. In particular, this sort routine re-arranges the data in the same original buffer. Since RAM is a scarce commodity on most microcontrollers, not having to allocate two buffers will reduce RAM requirements for the system.
+
+From a security perspective, call by reference is more vulnerable than call by value. If we have important information, then a level of trust is required to pass a pointer to the original data to a subroutine. Since call by value creates a copy of the data at the time of the call, it is slower but more secure. With call by value, the original data is protected from subroutines that are called.
+
+###Linked Lists
+
+
+
+
+___Linked lists___ are an important data structure used in operating systems. Each element (node) contains data and a pointer to another element as shown in Figure 1.35. Given that a node in the list is a composite of data and a pointer, we use struct to declare a composite data type. A composite data type can be made up of primitive data type, pointers and also other composite data-types.
+```c
+struct Node{
+  struct Node *Next;
+  int Data;
+};
+typedef struct Node NodeType;
+```c
+
+In this simple example, the Data field is just a 32-bit number, we will expand our node to contain multiple data fields each storing a specific attribute of the node. There is a pointer to the first element, called the head pointer. The last element in the list has a null pointer in its next field to indicate the end of the list.
+
+
+![Figure 1.35](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/fdd3f4b3ea865aa201f218dd1bdb0ae7/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_35LinkedList.jpg)
+*Figure 1.35. A linked list with 5 nodes.*
+
+We can create lists statically or dynamically. A statically created list is created at compile time and does not change during the execution of the program.
+```c
+NodeType theList[8] ={
+  {&theList[1], 1},
+  {&theList[2], 10},
+  {&theList[3], 100},
+  {&theList[4], 1000},
+  {&theList[5], 10000},
+  {&theList[6], 100000},
+  {&theList[7], 1000000},
+  {0, 10000000}};
+NodeType *HeadPt = theList; // points to first element
+```
+
+The following function searches the list to see if a data value exists in the list.
+```c
+int Search(int x){ NodeType *pt;
+  pt = HeadPt; // start at beginning
+  while(pt){
+    if(pt->Data == x) return 1; // found
+    pt = pt->Next;
+  }
+  return 0; // not found
+}
+```
+This example created the linked-list statically. The compiler will generate code 
+prior to running main (called ___premain___) that will initialize the eight nodes. 
+To do this initialization, there will be two copies of the structure: the initial copy 
+in ROM used during premain, and the RAM copy used by the program during execution. 
+If the program needs to change this structure during execution then having two copies 
+is fine. Lab 2 will be implemented in this manner. However, if the program does not 
+change the structure, then you could put a single copy in ROM by adding `const` to the 
+definition. In this case, ___HeadPt___ will be in RAM but the linked list will be in ROM.
+```c
+const struct Node{
+  const struct Node *Next;
+  int Data;
+};
+typedef const struct Node NodeType;
+NodeType theList[8] ={
+  {&theList[1], 1},
+  {&theList[2], 10},
+  {&theList[3], 100},
+  {&theList[4], 1000},
+  {&theList[5], 10000},
+  {&theList[6], 100000},
+  {&theList[7], 1000000},
+  {0, 10000000}};
+NodeType *HeadPt = theList; // points to first element
+```
+
+
+It is possible to create a linked list dynamically and grow/shrink the list as a program executes. However, in keeping with our goal to design a simple RTOS, we will refrain from doing any dynamic allocation, which would require the management of a heap. Most real-time systems do not allow the heap (malloc and free) to be accessed by the application programmer, because the use of the heap could lead to ___nondetriministic___ behavior (the activity of one program affects the behavior of another completely unrelated program).
+
 
 
