@@ -1663,3 +1663,142 @@ It is possible to create a linked list dynamically and grow/shrink the list as a
 
 
 
+###Introduction to debugging
+
+Microcontroller-related problems often require the use of specialized equipment to debug the system 
+hardware and software. Useful hardware tools include a logic probe, an oscilloscope, a logic analyzer, 
+and a JTAG debugger. A ___logic probe___ is a handheld device with an LED or buzzer. You place the 
+probe on your digital circuit and LED/buzzer will indicate whether the signal is high or low. An 
+___oscilloscope___, or scope, graphically displays information about an electronic circuit, where 
+the voltage amplitude versus time is displayed. A scope has one or two channels, with many ways to 
+trigger or capture data. A scope is particularly useful when interfacing analog signals using an 
+ADC or DAC. The PicoScope 2104 (from http://www.picotech.com/) is a low-cost but effective tool for 
+debugging microcontroller circuits. A ___logic analyzer___ is essentially a multiple channel digital 
+storage scope with many ways to trigger. As shown in Figure 1.36, we can connect the logic analyzer 
+to digital signals that are part of the system, or we can connect the logic analyzer channels to 
+unused microcontroller pins and add software to toggle those pins at strategic times/places. As a 
+troubleshooting aid, it allows the experimenter to observe numerous digital signals at various 
+points in time and thus make decisions based upon such observations. One problem with logic analyzers 
+is the massive amount of information that it generates. To use an analyzer effectively one must learn 
+proper triggering mechanisms to capture data at appropriate times eliminating the need to sift through 
+volumes of output. The logic analyzer figures in this book were collected with a logic analyzer 
+Digilent (from http://www.digilentinc.com/). The Analog Discovery combines a logic analyzer with an 
+oscilloscope, creating an extremely effective debugging tool. Maintenance Tip: First, find the things 
+that will break you. Second, break them. Common error: Sometimes the original system operates properly, 
+and the debugging code has mistakes.
+
+![Figure 1.36](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/30a7ab56600929b1e1323b2fa36b2d51/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_36_LogicAnalyzer.jpg)
+*Figure 1.36. A logic analyzer and example output. P4.1 and P4.0 are extra pins just used for debugging.*
+
+Figure 1.37 shows a logic analyzer output, where signals SSI are outputs to the LCD, and UART is 
+transmission between two microcontrollers. However P3.3 and P3.1 are debugging outputs to measuring 
+timing relationships between software execution and digital I/O. The rising edge of P3.1 is used to 
+trigger the data collection.
+
+
+![Figure 1.37](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/492554b7a671633d714e1a39bbc93fff/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig01_37LogicAnalyzer.jpg)
+*Figure 1.37. Analog Discovery logic analyzer output (www.digilentinc.com).*
+
+
+An ___emulator___ is a hardware debugging tool that recreates the input/output signals of the processor 
+chip. To use an emulator, we remove the processor chip and insert the emulator cable into the chip socket. 
+In most cases, the emulator/computer system operates at full speed. The emulator allows the programmer 
+to observe and modify internal registers of the processor. Emulators are often integrated into a personal 
+computer, so that its editor, hard drive, and printer are available for the debugging process.
+
+The only disadvantage of the in-circuit emulator is its cost. To provide some of the benefits of this 
+high-priced debugging equipment, many microcontrollers use a JTAG debugger. The JTAG hardware exists 
+both on the microcontroller chip itself and as an external interface to a personal computer. Although 
+not as flexible as an ICE, JTAG can provide the ability to observe software execution in real-time, 
+the ability to set breakpoints, the ability to stop the computer, and the ability to read and write 
+registers, I/O ports and memory.
+
+Debugging is an essential component of embedded system design. We need to consider debugging during all 
+phases of the design cycle. It is important to develop a structure or method when verifying system 
+performance. This section will present a number of tools we can use when debugging. Terms such as program 
+testing, diagnostics, performance debugging, functional debugging, tracing, profiling, instrumentation, 
+visualization, optimization, verification, performance measurement, and execution measurement have 
+specialized meanings, but they are also used interchangeably, and they often describe overlapping functions. 
+For example, the terms profiling, tracing, performance measurement, or execution measurement may be used 
+to describe the process of examining a program from a time viewpoint. But, tracing is also a term that 
+may be used to describe the process of monitoring a program state or history for functional errors, or 
+to describe the process of stepping through a program with a debugger. Usage of these terms among 
+researchers and users vary.
+
+___Black-box testing___ is simply observing the inputs and outputs without looking inside. Black-box 
+testing has an important place in debugging a module for its functionality. On the other hand, 
+___white-box testing___ allows you to control and observe the internal workings of a system. A common 
+mistake made by new engineers is to just perform black box testing. Effective debugging uses both. One 
+must always start with black-box testing by subjecting a hardware or software module to appropriate 
+test-cases. Once we document the failed test-cases, we can use them to aid us in effectively performing 
+the task of white-box testing.
+
+We define a ___debugging instrument___ as software code that is added to the program for the purpose of 
+debugging. A print statement is a common example of an instrument. Using the editor, we add print 
+statements to our code that either verify proper operation or display run-time errors.
+
+___Nonintrusiveness___ is the characteristic or quality of a debugger that allows the software/hardware 
+system to operate normally as if the debugger did not exist. Intrusiveness is used as a measure of the 
+degree of perturbation caused in program performance by the debugging instrument itself. Let ___t___
+be the time required to execute the instrument, and let ___Δt___ be the average time in between executions 
+of the instrument.  One quantitative measure of intrusiveness is t/Δt, which is the fraction of available 
+processor time used by the debugger. For example, a print statement added to your source code may be very 
+intrusive because it might significantly affect the real-time interaction of the hardware and software. 
+Observing signals that already exist as part of the system with an oscilloscope or logic analyzer is 
+__nonintrusive__, meaning the presence of the scope/analyzer has no effect on the system being measured. 
+A debugging instrument is classified as ___minimally intrusive___ if it has a negligible effect on the system 
+being debugged. In a real microcontroller system, breakpoints and single-stepping are also intrusive, 
+because the real hardware continues to change while the software has stopped. When a program interacts 
+with real-time events, the performance can be significantly altered when using intrusive debugging tools. 
+To be effective we must employ nonintrusive or minimally intrusive methods.
+
+Although, a wide variety of program monitoring and debugging tools are available today, in practice it is 
+found that an overwhelming majority of users either still prefer or rely mainly upon “rough and ready” 
+manual methods for locating and correcting program errors. These methods include desk-checking, dumps, 
+and print statements, with print statements being one of the most popular manual methods. Manual methods 
+are useful because they are readily available, and they are relatively simple to use. But, the usefulness 
+of manual methods is limited: they tend to be highly intrusive, and they do not provide adequate control 
+over repeatability, event selection, or event isolation. A real-time system, where software execution 
+timing is critical, usually cannot be debugged with simple print statements, because the print statement 
+itself will require too much time to execute.
+
+The first step of debugging is to __stabilize__ the system. In the debugging context, we stabilize the 
+problem by creating a test routine that fixes (or stabilizes) all the inputs. In this way, we can 
+reproduce the exact inputs over and over again. Once stabilized, if we modify the program, we are sure 
+that the change in our outputs is a function of the modification we made in our software and not due 
+to a change in the input parameters.
+
+___Acceleration___ means we will speed up the testing process. When we are testing one module we can 
+increase how fast the functions are called in an attempt to expose possible faults. Furthermore, 
+since we can control the test environment, we will vary the test conditions over a wide range of 
+possible conditions. ___Stress testing___ means we run the system beyond the requirements to see at 
+what point it breaks down.
+
+When a system has a small number of possible inputs (e.g., less than a million), it makes sense to test 
+them all. When the number of possible inputs is large we need to choose a set of inputs. ___Coverage___ 
+defines the subset of possible inputs selected for testing. A ___corner case___ is defined as a situation at 
+the boundary where multiple inputs are at their maximum, like the corner of a 3-D cube. At the corner 
+small changes in input may cause lots of internal and external changes. In particular, we need to test 
+the cases we think might be difficult (e.g., the clock output increments one second from 11:59:59 PM 
+December 31, 1999.) There are many ways to decide on the coverage. We can select values:
+
+* Near the extremes and in the middle
+* Most typical of how our clients will properly use the system
+* Most typical of how our clients will improperly use the system
+* That differ by one
+* You know your system will find difficult
+* Using a random number generator
+
+To ___stabilize___ the system we define a fixed set of inputs to test, run the system on these inputs, and 
+record the outputs. Debugging is a process of finding patterns in the differences between recorded 
+behavior and expected results. The advantage of modular programming is that we can perform ___modular 
+debugging___. We make a list of modules that might be causing the bug. We can then create new test routines 
+to stabilize these modules and debug them one at a time. Unfortunately, sometimes all the modules seem 
+to work, but the combination of modules does not. In this case we study the interfaces between the 
+modules, looking for intended and unintended (e.g., unfriendly code) interactions.
+
+
+
+
+
+
