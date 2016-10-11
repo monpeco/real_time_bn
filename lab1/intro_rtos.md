@@ -1890,3 +1890,71 @@ On the TM4C123:
 [Dumping with a filter](https://www.youtube.com/watch?v=2QXRNgeqE-M)
 
 
+--
+--
+
+###TExaS logic analyzer
+
+[TExaS logic analyzer](https://youtu.be/kExg3F8UMr0)
+
+Because time is an important aspect of real-time operating systems we have created means for you to observe the execution pattern of the 
+user application. We have implemented a zero-cost logic analyzer that has three parts. When debugging a lab, you will enable logic analyzer 
+mode by initializing Texas
+
+```c
+TExaS_Init(LOGICANALYZER, 1000);
+```
+
+First, as part of the Texas.c/Texas.h component there are seven functions you will call from within the user application. Basically, one of 
+these functions is called each time the user task performs a time-sensitive operation.
+
+```c
+    TExaS_Task0
+    TExaS_Task1
+    TExaS_Task2
+    TExaS_Task3
+    TExaS_Task4
+    TExaS_Task5
+    TExaS_Task6
+```
+
+Inside Texas, each function performs two operations. When in grading mode, the function will record the time in microseconds in an array. These 
+recordings will be used by the grader to verify the tasks are executed as desired. When in debugging or logic analyzer mode, the function toggles 
+one bit in a shared global variable called LogicData. You could extern this variable and set the bottom 7 bits however you wish. Bits 6 – 0 contain 
+data and bit 7 should remain 1.
+
+The second part of the logic analyzer is a UART and a periodic interrupt, running along side of your code. When in debugging or logic analyzer mode, 
+the periodic interrupt sends the 8-bit LogicData to the PC every 100us (10 kHz). Bit 7=1 signifies it is logic analyzer data. It is possible to use 
+the UART to send ASCII text (with bit 7=0).
+
+The third part of the logic analyzer is the TExaSdisplay application. To use the logic analyzer, you must enable the logic analyzer when calling 
+TExaS_Init, and the microcontroller must be running with interrupts enabled. Within TExaSdisplay, you first configure the COM port settings and 
+then you open the COM port. To run the logic analyzer, click the logic analyzer tool bar button or select logic analyzer in the view menu. Triggering 
+can be configured in the Logic analyzer configuration dialog. Triggers can occur when a signal is high, low, rising edge, falling edge or either edge.
+
+Some of the useful short cuts are
+* F1 about TExaSdisplay
+* F2 clear ASCII text display
+*   F3 COM port settings
+*   F4 open COM port
+*   Shift+F4 open next COM port
+*   F5 close COM port
+*   F6 run slower (longer time scale)
+*   F7 run faster (shorter time scale)
+*   F8 pause
+*   F9 single
+
+Remember the timing parameters calculated by the logic analyzer are only accurate to 100 us. The grader calculates timing parameters to 1-us accuracy. 
+The display will flicker because it collects a buffer of data and then displays it. For example, at 3.2-second window size, the application will 
+collect 6.4 seconds of data and then update the display.
+
+
+
+
+
+
+
+
+
+
+
