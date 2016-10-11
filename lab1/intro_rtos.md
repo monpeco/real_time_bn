@@ -1949,7 +1949,50 @@ The display will flicker because it collects a buffer of data and then displays 
 collect 6.4 seconds of data and then update the display.
 
 
+--
+--
 
+### Profiling
+
+___Profiling___ is a type of performance debugging that collects the time history of program execution. Profiling measures where and when our software executes. 
+It could also include what data is being processed. For example if we could collect the time-dependent behavior of the program counter, then we could see 
+the execution patterns of our software. 
+
+Profiling using a software dump to study execution pattern. In this section, we will discuss software instruments that study the execution pattern of our 
+software. In order to collect information concerning execution we will add debugging instruments that save the time and location in arrays (Program 1.6). 
+By observing these data, we can determine both a time profile (when) and an execution profile (where) of the software execution. Running this profile 
+revealed the sequence of places as 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, and 3. Each call to Debug_Profile requires 32 cycles to execute. 
+Therefore, this instrument is a lot less intrusive than a print statement.
+
+```c
+uint32_t Debug_time[20];
+uint8_t Debug_place[20];
+uint32_t n;
+
+void Debug_Profile(uint8_t p){
+  if(n < 20){
+    Debug_time[n] = STCURRENT; // record current time
+    Debug_place[n] = p;
+  n++;
+  }
+}
+
+uint32_t sqrt(uint32_t s){
+uint32_t t; // t*t becomes s
+int n; // loop counter 
+  Debug_Profile(0);
+  t = s/10+1; // initial guess 
+  Debug_Profile(1);
+  for(n = 16; n; --n){ // will finish
+    Debug_Profile(2);
+    t = ((t*t+s)/t)/2; 
+  }
+  Debug_Profile(3);
+  return t; 
+}
+```
+
+*Program 1.6: A time/position profile dumping into a data array.*
 
 
 
