@@ -1799,6 +1799,55 @@ modules, looking for intended and unintended (e.g., unfriendly code) interaction
 
 
 
+###Debugging on the MSP432
 
 
+___Functional debugging___ involves the verification of input/output parameters. It is a static process where inputs are supplied, the system is run, and the outputs are compared against the expected results. We will present seven methods of functional debugging.
 
+Single Stepping or Trace.
+Breakpoints without filtering.
+Conditional breakpoints.
+Instrumentation: print statements.
+Instrumentation: dump into array without filtering.
+Instrumentation: dump into array with filtering.
+Monitor using the LED heartbeat.
+We can add a debugger instrument that dumps strategic information into arrays at run time. Assume P1 is an input and P2 is an output port that are strategic to the system. The first step when instrumenting a dump is to define a buffer in RAM to save the debugging measurements. The Debug_Cnt will be used to index into the buffers. Debug_Cnt must be initialized to zero, before the debugging begins. The debugging instrument, shown in Program 1.3, saves the strategic data into the buffer. We can then observe the contents of the array at a later time. One of the advantages of dumping is that the JTAG debugging allows you to visualize memory even when the program is running.
+```c
+#define SIZE 100
+uint8_t Debug_Buffer[SIZE][2];
+unsigned int Debug_Cnt=0;
+void Debug_Dump(void){ // dump P1IN and P2OUT
+  if(Debug_Cnt < SIZE){
+    Debug_Buffer[Debug_Cnt][0] = P1IN;
+    Debug_Buffer[Debug_Cnt][1] = P2OUT;
+    Debug_Cnt++;
+  }
+}
+```
+Program 1.3. Instrumentation dump without filtering.
+
+Next, you add Debug_Dump(); statements at strategic places within the system. You can either use the debugger to display the results or add software that prints the results after the program has run and stopped. In this way, you can collect information in the exact same manner you would if you were using print statements.
+
+One problem with dumps is that they can generate a tremendous amount of information. If you suspect a certain situation is causing the error, you can add a filter to the instrument. A filter is a software/hardware condition that must be true in order to place data into the array. In this situation, if we suspect the error occurs when the pointer nears the end of the buffer, we could add a filter that saves in the array only when data matches a certain condition. In the example shown in Program 1.4, the instrument saves the strategic variables into the buffer only when P1.7 is high.
+```c
+#define SIZE 100
+uint8_t Debug_Buffer[SIZE][2];
+unsigned int Debug_Cnt=0;
+void Debug_FilteredDump(void){ // dump P1IN and P2OUT
+  if((P1IN&0x80)&&(Debug_Cnt < SIZE)){
+    Debug_Buffer[Debug_Cnt][0] = P1IN;
+    Debug_Buffer[Debug_Cnt][1] = P2OUT;
+    Debug_Cnt ++;
+  }
+}
+```
+Program 1.4. Instrumentation dump with filter.
+
+Another tool that works well for real-time applications is the monitor. A monitor is an independent output process, somewhat similar to the print statement, but one that executes much faster and thus is much less intrusive. An LCD can be an effective monitor for small amounts of information if the time between outputs is much larger than the time to output. Another popular monitor is the LED. You can place one or more LEDs on individual otherwise unused output bits. Software toggles these LEDs to let you know what parts of the program are running. An LED is an example of a Boolean monitor or heartbeat. Assume an LED is attached to Port 1 bit 0. Program 1.5 will toggle the LED.
+```c
+#define LEDOUT (*((volatile uint8_t *)(0x42000000+32*0x4C02+4*0)))
+#define Debug_HeartBeat() (LEDOUT ^= 0x01)
+```
+Program 1.5. An LED monitor.
+
+Next, you add Debug_HeartBeat(); statements at strategic places within the system. Port 1 must be initialized so that bit 0 is an output before the debugging begins. You can either observe the LED directly or look at the LED control signals with a high-speed oscilloscope or logic analyzer. When using LED monitors it is better to modify just the one bit, leaving the other 7 as is. In this way, you can have multiple monitors on one port.
