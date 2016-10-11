@@ -1801,6 +1801,7 @@ modules, looking for intended and unintended (e.g., unfriendly code) interaction
 
 ###Debugging on the MSP432
 
+[Debugging on the MSP432](https://youtu.be/EePR_nCWNzg)
 
 ___Functional debugging___ involves the verification of input/output parameters. It is a static process where inputs are supplied, the system is run, 
 and the outputs are compared against the expected results. We will present seven methods of functional debugging.
@@ -1875,9 +1876,17 @@ analyzer. When using LED monitors it is better to modify just the one bit, leavi
 on one port.
 
 
+CHECKPOINT 1.21
+
+Write a debugging instrument that toggles Port 1 bit 3 (MSP432) or toggles Port A bit 3 (TM4C123).
+
+On the MSP432:
+    `P1OUT ^= 0x08;`
+    
+On the TM4C123:
+    `GPIO_PORTA_DATA_R ^= 0x08;`
 
 
-
-
+[Dumping with a filter](https://www.youtube.com/watch?v=2QXRNgeqE-M)
 
 
