@@ -1952,7 +1952,7 @@ collect 6.4 seconds of data and then update the display.
 --
 --
 
-### Profiling
+###Profiling
 
 ___Profiling___ is a type of performance debugging that collects the time history of program execution. Profiling measures where and when our software executes. 
 It could also include what data is being processed. For example if we could collect the time-dependent behavior of the program counter, then we could see 
