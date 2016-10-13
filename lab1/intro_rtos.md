@@ -2012,21 +2012,21 @@ You might ask "what is the purpose of R9 and R10?" The MSP430 is a 16-bit low po
 A large number of BoosterPacks were made for the MSP430. When the LM4F120/TM4C123 LaunchPad came out, they added R9 R10 so some of these 
 old MSP430 BoosterPacks could be used for the new LaunchPad.
 
-###__STARTER PROJECTS__
+###STARTER PROJECTS
 
 Lab1_4C123 or Lab1_MSP432
 
-OBJECTIVES
+___OBJECTIVES___
 
-* Complete the installation process for the Keil IDE Install Keil
+* Complete the installation process for the Keil IDE [Install Keil](http://edx-org-utaustinx.s3.amazonaws.com/UT601x/RTOSdownload.html)
     1. Editor
     2. Compiler
     3. Debugger
-* Complete the UT12.01x installation process  Install TExaS
+* Complete the UT12.01x installation process  [Install TExaS](http://edx-org-utaustinx.s3.amazonaws.com/UT601x/RTOSdownload.html)
     1. Example code
     2. Lab starter projects
     3. TExaSdisplay application
-* Install the windows drivers for the LaunchPad Install Drivers
+* Install the windows drivers for the LaunchPad [Install Drivers](http://edx-org-utaustinx.s3.amazonaws.com/UT601x/RTOSdownload.html)
 * Get familiar with the development process
     1. Editing
     2. Compiling
