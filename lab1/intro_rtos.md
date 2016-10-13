@@ -1994,10 +1994,45 @@ int n; // loop counter
 
 *Program 1.6: A time/position profile dumping into a data array.*
 
+--
+--
+###Quiz 1
+--
+--
+
+###About Lab 1
+
+###PREPARATION
+
+You will need either a TM4C123 or an MSP432 LaunchPad and an MK-II BoosterPack. There is an option to performing this lab without the MK-II BoosterPack.
+
+***Reminder*** If you are using the TM4C123/LM4F120 you will need to remove R9 and R10 to use the TM4C123/LM4F120 with the MK-II booster. 
+For information on why/how to remove the two resistors, see section 1.4.2. 
+You might ask "what is the purpose of R9 and R10?" The MSP430 is a 16-bit low power microcontroller. It has a 20-pin LaunchPad header. 
+A large number of BoosterPacks were made for the MSP430. When the LM4F120/TM4C123 LaunchPad came out, they added R9 R10 so some of these 
+old MSP430 BoosterPacks could be used for the new LaunchPad.
+
+###__STARTER PROJECTS__
+
+Lab1_4C123 or Lab1_MSP432
+
+OBJECTIVES
+
+* Complete the installation process for the Keil IDE Install Keil
+    1. Editor
+    2. Compiler
+    3. Debugger
+* Complete the UT12.01x installation process  Install TExaS
+    1. Example code
+    2. Lab starter projects
+    3. TExaSdisplay application
+* Install the windows drivers for the LaunchPad Install Drivers
+* Get familiar with the development process
+    1. Editing
+    2. Compiling
+    3. Downloading
+    4. Debugging
+* Experience the need for an RTOS
 
 
-
-
-
-
-
+###OVERVIEW
