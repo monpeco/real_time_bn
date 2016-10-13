@@ -2036,3 +2036,49 @@ ___OBJECTIVES___
 
 
 ###OVERVIEW
+The Lab 1 starter project using the ___LaunchPad___ and the ___Educational BoosterPack MK-II___ (BOOSTXL-EDUMKII) is a fitness device. 
+It inputs from the microphone, accelerometer, light sensor and buttons. It performs some simple measurements and calculations of steps, 
+sound intensity, and light intensity. It outputs data to the LCD and it generates simple beeping sounds. Figure Lab1.1 shows the data 
+flow graph of Lab 1. Your assignment in Lab 1 is to increase the rate of Task0 from 10 to 1000 Hz.
+
+![Figure Lab1.1](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/4ea46a5bb5a0018e8f0790e7b0af9ae6/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Lab1.1dataFlow.jpg)
+*Figure Lab1.1. Data flow graph of Lab 1.*
+
+
+[Running of Lab 1](https://youtu.be/BJX3YFkffc4)
+
+This simple fitness device has six tasks. Normally, one would use interrupts to create real-time periodic events. However, Lab 1 will 
+run without interrupts to illustrate the need for an operating system to manage multiple tasks that are only loosely connected. A very 
+poorly constructed main program runs four of the tasks at about 10 times a second and the other two tasks at about once a second. One 
+of the best ways to see how the six tasks fit together is to understand the data being passed.
+
+* Task0: microphone input measuring RMS sound amplitude running at 10 Hz
+1. Reads sound from microphone (ADC)
+2. Sends ___SoundData___ to Task4
+3. Sends ___SoundRMS___ to Task5
+* Task1: acceleration input measuring steps running at 10 Hz
+1. Reads x,y,z acceleration (ADC)
+2. Sends ___AlgorithmState___ to Task3
+3. Sends ___Magnitude, EWMA___ to Task4
+4. Sends Steps to Task5
+* Task2: light input measure average light intensity running at 1 Hz
+1. Reads light from sensor (I2C)
+2. Sends ___LightData___ to both Task4 and Task5
+* Task3: input from switches, output to buzzer running at 10 Hz
+1. Inputs from Buttons (GPIO)
+2. Sends ___PlotState___ to Task4
+3. Outputs to Buzzer (PWM)
+4. Outputs to LED (GPIO)
+* Task4: plotting output to LCD running at 10 Hz
+1. Receives ___SoundData, Magnitude, EWMA, LightData, PlotState___
+2. Outputs to LCD (SSI)
+* Task5: numerical output to LCD running at 1 Hz
+1. Receives ___SoundRMS, Steps, LightData___
+2. Outputs to LCD (SSI)
+
+
+
+
+
+
+
