@@ -2053,28 +2053,28 @@ poorly constructed main program runs four of the tasks at about 10 times a secon
 of the best ways to see how the six tasks fit together is to understand the data being passed.
 
 * Task0: microphone input measuring RMS sound amplitude running at 10 Hz
-1. Reads sound from microphone (ADC)
-2. Sends ___SoundData___ to Task4
-3. Sends ___SoundRMS___ to Task5
+ 1. Reads sound from microphone (ADC)
+ 2. Sends ___SoundData___ to Task4
+ 3. Sends ___SoundRMS___ to Task5
 * Task1: acceleration input measuring steps running at 10 Hz
-1. Reads x,y,z acceleration (ADC)
-2. Sends ___AlgorithmState___ to Task3
-3. Sends ___Magnitude, EWMA___ to Task4
-4. Sends Steps to Task5
+  1. Reads x,y,z acceleration (ADC)
+  2. Sends ___AlgorithmState___ to Task3
+  3. Sends ___Magnitude, EWMA___ to Task4
+  4. Sends Steps to Task5
 * Task2: light input measure average light intensity running at 1 Hz
-1. Reads light from sensor (I2C)
-2. Sends ___LightData___ to both Task4 and Task5
+  1. Reads light from sensor (I2C)
+  2. Sends ___LightData___ to both Task4 and Task5
 * Task3: input from switches, output to buzzer running at 10 Hz
-1. Inputs from Buttons (GPIO)
-2. Sends ___PlotState___ to Task4
-3. Outputs to Buzzer (PWM)
-4. Outputs to LED (GPIO)
+    1. Inputs from Buttons (GPIO)
+    2. Sends ___PlotState___ to Task4
+    3. Outputs to Buzzer (PWM)
+    4. Outputs to LED (GPIO)
 * Task4: plotting output to LCD running at 10 Hz
-1. Receives ___SoundData, Magnitude, EWMA, LightData, PlotState___
-2. Outputs to LCD (SSI)
+   1. Receives ___SoundData, Magnitude, EWMA, LightData, PlotState___
+   2. Outputs to LCD (SSI)
 * Task5: numerical output to LCD running at 1 Hz
-1. Receives ___SoundRMS, Steps, LightData___
-2. Outputs to LCD (SSI)
+    1. Receives ___SoundRMS, Steps, LightData___
+    2. Outputs to LCD (SSI)
 
 
 
