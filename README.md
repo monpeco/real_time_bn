@@ -39,6 +39,7 @@ Here is an overview of the six laboratories, one for each chapter
 6. ___Bluetooth personal area network___
     1. Interacting with the device from a smart phone
 
+###Using Keil µVision V5.21.1.0
 --
 Santiago, Sep 2016
 --
