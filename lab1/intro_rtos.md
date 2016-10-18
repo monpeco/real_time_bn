@@ -2205,4 +2205,16 @@ where X and Y are hexadecimal digits: produced by shifting an 8-bit unsigned val
   in the form 0xXYXYXYXY
 
 
+###References
 
+Reprinted with approval from these five books:
+
+Embedded Systems: Introduction to ARM Cortex-M Microcontrollers, ISBN: 978-1477508992, Jonathan Valvano, http://users.ece.utexas.edu/~valvano/arm/outline1.htm
+
+Embedded Systems: Introduction to the MSP432 Microcontroller, ISBN: 978-1512185676, Jonathan Valvano, http://users.ece.utexas.edu/~valvano/arm/msp432.htm
+
+Embedded Systems: Real-Time Interfacing to the MSP432 Microcontroller, ISBN: 978-1514676585, Jonathan Valvano, http://users.ece.utexas.edu/~valvano/arm/msp432.htm
+
+Embedded Systems: Real-Time Interfacing to ARM Cortex-M Microcontrollers, ISBN: 978-1463590154, Jonathan Valvano, http://users.ece.utexas.edu/~valvano/arm/outline.htm
+
+Embedded Systems: Real-Time Operating Systems for ARM Cortex-M Microcontrollers, ISBN: 978-1466468863, Jonathan Valvano, http://users.ece.utexas.edu/~valvano/arm/outline3.htm
