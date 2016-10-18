@@ -40,6 +40,7 @@ Here is an overview of the six laboratories, one for each chapter
     1. Interacting with the device from a smart phone
 
 ###Using Keil µVision V5.21.1.0
+###BoardSupportPackage_MSP432
 --
 Santiago, Sep 2016
 --
