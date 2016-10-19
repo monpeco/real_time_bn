@@ -37,6 +37,9 @@ The synchronization problem is basically trying to establish an order of executi
 
 ###2.1.1. Motivation
 
+*Introduction to threads*
+![Introduction to threads](https://youtu.be/JSFkUR94uLg)
+
 Consider a system with one input task, one output tasks and two non I/O tasks, as shown in Figure 2.1. The non-I/O tasks are called 
 function3 and function4. Here are two possible ways of structuring a solution to the problem. The left side of the figure shows a 
 ___busy-wait solution___, where a single main program runs through the tasks by checking to see if the conditions for running the 
@@ -60,6 +63,7 @@ Figure 2.1. Flowcharts of a system with four loosely coupled tasks.
 ###2.1.2. Introduction to Threads
 
 ####Threads
+![Threads](https://youtu.be/9IY1iVy_uk4)
 
 A Threads is context of execution. So in practice, we have a program.
 A program is a static entity. It doesn't have a life. It's just a piece of code.
@@ -152,14 +156,37 @@ Threads can't communicate with each other using the stack, because they have phy
 variables will be used, because one thread can write to the global, and another can read from it.
 
 
+###2.1.3. States of a main thread
+
+*States*
+!(States)[https://youtu.be/iep01EUwbqo]
+
+A main thread can be in one of four states, as shown in Figure 2.4. The arrows in Figure 2.4 describe the condition causing the thread to change states. 
+In Chapter 2, threads oscillate between the active and run states. In Chapter 2, we will create all main threads at initialization and these main threads 
+will never block, sleep, or die.
+
+A main thread is in the ___run state___ if it currently executing. On a microcontroller with a single processor like the Cortex M, there can be at most one 
+thread running at a time. As computational requirements for an embedded system rise, we can expect microcontrollers in the future to have multicore processors, 
+like the ones seen now in our desktop PC. For a multicore processor, there can be multiple threads in the run state.
+
+A main thread is in the ___active state___ if it ready to run but waiting for its turn. In Lab 2, we will implement four threads that are either running or active.
+
+Sometimes a main thread needs to wait for a fixed amount of time. The OS will not run a main thread if it is in the ___sleep state___. After the prescribed amount of 
+time, the OS will make the thread active again. Sleeping would be used for tasks that are not real-time. Sleeping will be presented in Chapter 3.
+
+A main thread is in the ___blocked state___ when it is waiting for some external event like input/output (keyboard input available, printer ready, I/O device available.) 
+We will implement blocking in the next chapter.
 
 
+![Figure 2.4](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/ff62a206f8abebbcda4cefb9c507f6cd/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig02_04_Threads.jpg)
+*Figure 2.4. A main thread can be in one of four states.*
 
-
-
-
-
-
+The OS manages the execution of threads. An important situation to manage is when a thread is stuck and cannot make progress. For example, a thread may 
+need data from another thread, a thread may be waiting on I/O, or a thread may need to wait for a specified amount of time. In Lab 3, when a thread is 
+waiting because it cannot make progress it will ___block___, meaning it will not run until the time at which it can make progress. Similarly, in Lab 3 when a 
+thread needs to wait for a prescribed amount of time, it will ___sleep___, meaning it will not run until the elapsed wait time has passed. Blocking and sleeping 
+will free up the processor to perform actual work. In Lab 2 main threads will not block or sleep, but more simply we will ___spin___ if a thread is waiting on 
+an event. A thread that is spinning remains in the active state, and wastes its entire time slice checking the condition over and over.
 
 
 
