@@ -189,4 +189,159 @@ will free up the processor to perform actual work. In Lab 2 main threads will no
 an event. A thread that is spinning remains in the active state, and wastes its entire time slice checking the condition over and over.
 
 
+--
+--
+
+###2.1.4. Real-time systems
+
+*Real-time systems*
+![Real-time systems](https://youtu.be/yc1rMDKZrec)
+
+Designing a RTOS requires many decisions to be made. Therefore, it is important to have performance criteria with which to evaluate one alternative to another. 
+A common performance criterion used in Real-Time Systems is ___Deadline___, a timing constraint with many definitions in the literature. In this class we will 
+define specific timing constraints that apply to design of embedded systems. ___Bandwidth___ is defined as the information rate. It specifies the amount of 
+actual data per unit time that are input, processed, or output.
+
+In a real-time system operations performed must meet logical correctness and also be completed on time (i.e., meet timing constraints). Non real-time systems 
+require logical correctness but have no timing requirements. The tolerance of a real-time system towards failure to meet the timing requirements determines 
+whether we classify it as hard real time, firm real time, or soft real time. If missing a timing constraint is unacceptable, we call it a ___hard real-time system___. 
+In a ___firm real-time system___ the value of an operation completed past its timing constraint is considered zero but not harmful. In a ___soft real-time system___ 
+the value of an operation diminishes the further it completes after the timing constraint.
+
+* ___Hard real time___: For example, if the pressure inside a module in a chemical plant rises above a threshold, failure to respond through an automated 
+corrective operation of opening a pressure valve within a timing constraint can be catastrophic. The system managing the operations in such a scenario is 
+a hard real-time operating system.
+
+* ___Firm real time___: An example of a firm real-time system is a streaming multimedia communication system where failure to render one video frame on 
+time in a 30 frames per second stream can be perceived as a loss of quality but does not affect the user experience significantly.
+
+* ___Soft real time___: An example of a soft real-time system is an automated stock trading system where excessive delay in formulating an automated response 
+to buy/sell may diminish the monetary value one can gain from the trade. The delivery of email is usually soft real time, because the value of the information 
+reduces the longer it takes.
+
+Please understand that the world may not reach consensus of the definitions of hard, firm and soft. Rather than classify names to the real-time system, think 
+of this issue is as a continuum. There is a continuous progression of the consequence of missing a deadline: 
+* catastrophic (hard)
+* zero effect and no harm (firm) 
+* still some good can come from finishing after deadline (soft). 
+
+Similarly: there is a continuous progression for the value of missing a deadline: negative value (hard), zero value (firm) and some but diminishing positive 
+value (soft).
+
+To better understand real-time systems, ___timing constraints___ can be classified into two types. The first type is ___event-response___. The event is a software 
+or hardware trigger that signifies something important has occurred and must be handled. The response is the system’s reaction to that event. Examples of 
+event-response tasks include:
+
+* Operator pushes a button ->    Software performs action
+* Temperature is too hot      ->    Turn on cooling fan
+* Supply voltage is too low   ->    Activate back up battery
+* Input device has new data ->    Read and process input data
+* Output device is idle           ->    Perform another output
+
+The specific timing constraint for this type of system is called latency, which is the time between the event and the completion of the response. Let Ei be the 
+times that events occur in our system, and Ti be the times these events are serviced. Latency is defined as
+
+```
+Δi = Ti – Ei for i = 0, 1, 2, …, n-1
+```
+
+where n is the number of measurements collected. The timing constraint is the maximum value for latency, Δi, that is acceptable. In most cases, the system will 
+not be able to anticipate the event, so latency for this type of system will always be positive.
+
+A second type of timing constraint occurs with prescheduled tasks. For example, we could schedule a task to run periodically. If we define fs as the desired 
+frequency of a periodic task, then the desired period is Δt=1/fs. Examples of prescheduled tasks include:
+
+* Every 30 seconds                  ->    Software checks for smoke
+* At 22 kHz                                ->    Output new data to DACs creating sound
+* At 1 week, 1 month, 1 year ->     Perform system maintenance
+* At 300 Hz                                ->    Input new data from ADC measuring EKG
+* At 6 months of service         ->    Deactivate system because it is at end of life
+
+For periodic, the desired time to run the i'th periodic instance of the task is given as
+```
+    Di = T0 +i*Δt for i = 0, 1, 2, …, n-1
+```
+
+where T0 is the starting time for the system. For prescheduled tasks, we define jitter as the difference between desired time a task is supposed 
+to run and the actual time it is run. Let Ti be the actual times the task is run, so in this case jitter is
+
+```
+     δti = Ti – Di for i = 0, 1, 2, …, n-1
+```
+
+Notice for prescheduled tasks the jitter can be positive (late) or negative (early). For some situations running the task early is acceptable but 
+being late is unacceptable. If I have the newspaper delivered to my door each morning, I do not care how early the paper comes, as long as it 
+arrives before I wake up. In this case, the timing constraint is the maximum value for jitter δti that is acceptable. On the other hand, for 
+some situations, it is unacceptable to be early and it is acceptable to be late. For example, with tasks involving DACs and ADCs, as shown in 
+Figure 2.5, we can correlate voltage error in the signal to time jitter. If dV/dt is the slew rate (slope) of the voltage signal, then the voltage 
+error (noise) caused by jitter is
+
+```
+     δVi = δti * dV/dt for i = 0, 1, 2, …, n-1
+```
+
+The error occurs because we typically store sampled data in a simple array and assume it was sampled at fs = 1/Δt. In other words, we do not 
+record exactly when the sample was actually performed.
+
+![Figure 2.5](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/583b288b74dc87d429f3dc92bd91bba2/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig02_05_samplingJitter.jpg)
+*Figure 2.5. Effect of jitter on sampled data. True input is a sinusoidal. Blue lines depict when the voltage should be sampled. Red lines depict when the voltage was actually be sampled. There is time jitter such that every other sample is early and every other sample is late. In the zoomed in portion this sample is late; the consequence of being late is the actual sampled data is lowered than the correct value. Sampling jitter causes noise in the data.*
+
+For cases where the starting time, T0, does not matter, we can simplify the analysis by looking at time differences between when the task is 
+`run, ΔTi = (Ti – Ti-1)`. In this case, jitter is simply
+
+```
+     δti = ΔTi - Δt for i = 0, 1, 2, …, n-1
+```
+
+We will classify a system with periodic tasks as real-time if the jitter is always less than a small but acceptable value. In other words the 
+software task always meets its timing constraint. More specifically, we must be able to place an upper bound, k, on the time jitter.
+
+```
+     -k ≤ δti ≤ +k for all i
+```
+
+Previously in Lab 1, we defined a similar performance metric as
+
+```
+    Min = minimum δti for all measurements i
+    Max = maximum δti for all measurements i
+    Jitter = Max - Min = (maximum δti – minimum δti)
+```
+
+In most situations, the time jitter will be dominated by the time the microcontroller runs with interrupts disabled. For lower priority 
+interrupts, it is also affected by the length and frequency of higher priority interrupt requests.
+
+To further clarify this situation we must clearly identify the times at which the Ti measurements are collected. We could define 
+this time as when the task is started or when the task is completed. When sampling an ADC the important time is when the ADC 
+sampling is started. More specifically, it is the time the ADC sample/hold module is changed from sample to hold mode. This is 
+because the ADC captures or latches the analog input at the moment the sample/hold is set to hold. For tasks with a DAC, the 
+important time is when the DAC is updated. More specifically, it is the time the DAC is told to update its output voltage.
+
+
+###CHECKPOINT 2.3
+
+Consider a task that inputs data from the serial port. When new data arrives the serial port triggers an event. When the software 
+services that event, it reads and processes the new data. The serial port has a hardware to store incoming data (2 on the MSP432, 
+16 on the TM4C123) such that if the buffer is full and more data arrives, the new data is lost. Is this system hard, firm, or 
+soft real time?
+
+It is hard real time because if the response is late, data may be lost.
+
+
+###CHECKPOINT 2.4
+
+Consider a hearing aid that inputs sounds from a microphone, manipulates the sound data, and then outputs the data to a speaker. 
+The system usually has small and bounded jitter, but occasionally other tasks in the hearing aid cause some data to be late, 
+causing a noise pulse on the speaker. Is this system hard, firm or soft real time?
+
+It is firm real time because it causes an error that can be perceived but the effect is harmless and does not significantly 
+alter the quality of the experience.
+
+###CHECKPOINT 2.5
+
+Consider a task that outputs data to a printer. When the printer is idle the printer triggers an event. When the software 
+services that event, it sends more data to the printer. Is this system hard, firm or soft real time?
+Hide Answer
+It is soft real time because the faster it responses the better, but the value of the system (bandwidth is amount of data 
+printed per second) diminishes with latency.
 
