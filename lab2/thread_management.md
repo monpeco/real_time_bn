@@ -557,3 +557,11 @@ and more difficult to schedule all tasks. The solution will be to use a faster p
 will operate in the 5 to 50% range.
 
 
+--
+--
+###2.1.7. Function Pointers
+
+![Function pointers](https://youtu.be/5LakKUvmOpI)
+
+
+
