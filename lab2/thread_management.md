@@ -389,4 +389,171 @@ What happens if the ISR in Figure 2.7 runs twice before the main program has a c
 With the flowchart in Figure 2.7, the Status will be set twice and the first data value will be lost. We will fix this 
 error in Chapter 3 using a first in first out (FIFO) queue.
 
+--
+--
+
+###2.1.6. Scheduler
+
+![Scheduler](https://youtu.be/yYZeApNx7Hg)
+
+A ___scheduler___ is a OS function that gives threads the notion of Concurrent processing where multiple threads are active. 
+If we look from a distance (zoom out in time) it appears they are running simultaneously, when in fact only one thread is 
+running at any time. On the Cortex-M with one processor only a single thread can run at any given time while other ready 
+threads contend for processing. The scheduler therefore runs the ready threads one by one, switching between them to give 
+us the illusion that all are running simultaneously.
+
+In this class, the OS will schedule both main threads and event threads. However, in this section we will discuss scheduling 
+main threads. To envision a scheduler, we first list the main threads that are ready to run. When the processor is free, 
+the scheduler will choose one main thread from the ready list and cause it to run. In a ___preemptive scheduler___, main 
+threads are suspended by a periodic interrupt, the scheduler chooses a new main thread to run, and the return from interrupt 
+will launch this new thread. In this situation, the OS itself decides when a running thread will be suspended, returning it 
+to the active state. In Program 2.1, there exist four threads as illustrated in Figure 2.8. The preemptive scheduler in the 
+RTOS runs the four main threads concurrently. In reality, the threads are run one at time in sequence.
+
+```c
+void Task1(void){
+  Init1();
+  while(1){
+    if(Status1())
+      Input1();
+  }
+}
+```
+```c
+void Task2(void){
+  Init2();
+  while(1){
+    if(Status2())
+      Output2();
+  }
+}
+```c
+```
+void Task3(void){
+  Init3();
+  while(1){
+    function3();
+  }
+}
+```
+```c
+void Task4(void){
+  Init4();
+  while(1){
+    function4();
+  }
+}
+```
+
+*Program 2.1. Four main threads run concurrently using a preemptive scheduler.*
+
+![Figure 2.8](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/a107499a45da7d7fca6c5d90b59ec355/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig02_08_MultipleInputOutputFlowcharts.jpg)
+*Figure 2.8. Four main threads.*
+
+In a ___cooperative___ or ___nonpreemptive scheduler___, the main threads themselves decide when to stop running. This is 
+typically implemented by having a thread call a function like __OS_Suspend__. This function will suspend the running 
+thread (putting the old thread in the Active state), run the scheduler (which chooses a new thread), and launch the new 
+thread. The new thread is now in the Run state. Although easy to implement because it doesn’t require interrupts, a 
+cooperative scheduler is not appropriate for real-time systems. In Program 2.2, the cooperative scheduler runs the four 
+main threads in a cyclic manner.
+
+```c
+void Task1(void){
+ Init1();
+ while(1){
+  if(Status1()){
+   Input1();
+  }
+  OS_Suspend();
+ }
+}
+```
+```c
+void Task2(void){
+ Init2();
+ while(1){
+  if(Status2()){
+   Output2();
+ }
+ OS_Suspend();
+ } 
+}
+```c
+```
+void Task3(void){
+ Init3();
+ while(1){
+   function3();
+   OS_Suspend();
+ }
+}
+```
+```c
+void Task4(void){
+ Init4();
+ while(1){
+   function4();
+   OS_Suspend();
+ }
+}
+```
+*Program 2.2. Four threads run in a cooperative manner.*
+
+There are many scheduling algorithms one can use to choose the next thread to run. A ___round robin scheduler___ simply runs 
+the ready threads in circular fashion, giving each the same amount of time to execute. A ___weighted round robin scheduler___ 
+runs the ready threads in circular fashion, but gives threads unequal weighting. One way to implement weighting is to vary the 
+time each thread is allowed to run according to its importance. Another way to implement weighting is to run important threads 
+more often. E.g., assume there are three threads 1 2 3, and thread 1 is more important. We could run the threads in this 
+repeating pattern: 1, 2, 1, 3, 1, 2, 1, 3… Notice that very other time slice is given to thread 1. In this simple example, 
+Thread 1 receives 50% of the processor time, and threads 2 and 3 each receive 25%. A ___priority scheduler___ assigns each 
+thread a priority number (e.g., 1 is the highest). Two or more threads can have the same priority. A priority 2 thread is run 
+only if no priority 1 threads are ready to run. Similarly, we run a priority 3 thread only if no priority 1 or priority 2 threads 
+are ready. If all threads have the same priority, then the scheduler reverts to a round-robin system. The advantage of priority 
+is that we can reduce the latency (response time) for important tasks by giving those tasks a high priority. The disadvantage 
+is that on a busy system, low priority threads may never be run. This situation is called ___starvation___.
+
+Schedulers for real-time systems may use other metrics to decide thread importance/priority. A ___deadline___ is when a task 
+should complete relative to when it is ready to run. The ___time-to-deadline___ is the time between now and the deadline. If 
+you have a paper due on Friday, and it is Tuesday, the time-to-deadline is 3 days. Furthermore, we define ___slack time___ as 
+the time-to-deadline minus the how long it will take to complete the task. If you have a paper due on Friday, it is Tuesday 
+and it will take you one day to write the paper, your slack time is 2 days. Once the slack time becomes negative, you will 
+miss your deadline. There are many other ways to assign priority:
+
+* Minimize latency for real-time tasks
+* Assign a dollar cost for delayed service and minimize cost
+* Give priority to I/O bound tasks over CPU bound tasks
+* Give priority to tasks that need to run more frequently
+* Smallest time-to-deadline first
+* Smallest slack time first
+
+A thread's priority may be statically assigned or can be changed dynamically as the system progresses. An ___exponential queue___ 
+is a dynamic scheduling algorithm, with varying priorities and time slices. If a thread blocks on I/O, its priority is increased 
+and its time slice is halved. If it runs to completion of a time slice, its priority is decreased and its time slice is doubled.
+
+Another dynamic scheduling algorithm uses the notion of ___aging___ to solve starvation. In this scheme, threads have a permanent 
+fixed priority and a temporary working priority. The permanent priority is assigned according the rules of the previous 
+paragraph, but the temporary priority is used to actually schedule threads. Periodically the OS increases the temporary 
+priority of threads that have not been run in a long time. Once a thread is run, its temporary priority is reset back to 
+its permanent priority.
+
+Assigning priority to tasks according to how often they are required to run (their periodicity) is called a Rate Monotonic 
+Scheduler. Assume we have m tasks that are periodic, running with periods Tj (0 ≤ j ≤ m-1). We assign priorities according 
+to these periods with more frequent tasks having higher priorities. Furthermore, let Ej be the maximum time to execute each 
+task. Assuming there is little interaction between tasks, the Rate Monotonic Theorem can be used to predict if a scheduling 
+solution exists. Tasks can be scheduled if
+
+![scheduler_rate_monotonic_theorem](https://cloud.githubusercontent.com/assets/16638078/19609070/5f18fa08-97ab-11e6-8a1d-f95b2db067e6.png)
+
+What this means is, as long as the total utilization of the set of tasks is below 69.32% (ln(2) ≈ 0.6932) RMS will guarantee 
+to meet all timing constraints. The practical application of the Rate Monotonic Theorem is extremely limited because most 
+systems exhibit a high degree of coupling between tasks. Nevertheless, it does motivate a consideration that applies to all 
+real-time operating systems. Let E_j be the time to execute each task, and let T_j be the time between executions of each task. 
+In general, E_j/T_j will be the percentage of time Task j needs to run. The sum of these percentages across all tasks yields 
+a parameter that estimates processor utilization.
+
+If utilization is over 100% there will be no solution. If utilization is below 5%, the processor may be too fast for your problem. 
+The solution could be to slow down the clock and save power. As the sum goes over 50% and begins to approach 100%, it will be more 
+and more difficult to schedule all tasks. The solution will be to use a faster processor or simplify the tasks. An effective system 
+will operate in the 5 to 50% range.
+
 
