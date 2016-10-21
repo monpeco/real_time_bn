@@ -345,3 +345,48 @@ Hide Answer
 It is soft real time because the faster it responses the better, but the value of the system (bandwidth is amount of data 
 printed per second) diminishes with latency.
 
+--
+--
+#2.1.5. Producer/Consumer problem
+
+![Producer/consumer](https://youtu.be/fClPWeY1Q84)
+
+One of the classic problems our operating system must handle is communication between threads. We define a ___producer___ thread as one 
+that creates or produces data. A ___consumer___ thread is a thread that consumes (and removes) data. The communication mechanism we will 
+use in this chapter is a mailbox (Figure 2.6). The mailbox has a Data field and a Status field. Mailboxes will be statically 
+allocated global structures. Because they are global variables, it means they will exist permanently and can be carefully shared 
+by more than one task. The advantage of using a structure like a mailbox for a data flow problem is that we can decouple the 
+producer and consumer threads. In chapter 3, we will replace the mailbox with a first in first out (FIFO) queue. The use of a 
+FIFO can significantly improve system performance.
+
+![Figure 2.6](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/40fb30d8a2eea9f26202641a259dc6cc/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig02_06_MailBox.jpg)
+*Figure 2.6. The mailbox is used to send data from the producer thread to the consumer thread.*
+
+
+There are many producer/consumer applications in the field of embedded systems. In Table 2.1 the threads on the left are 
+producers that create data, while the threads on the right are consumers that process data.
+
+| Source/Producer	| Sink/Consumer |
+|-------------------|---------------|
+|Keyboard input	| Program that interprets|
+|Software that has data	| Printer output|
+|Software sends message	| Software receives message|
+|Microphone and ADC	| Software that saves sound data|
+|Software that has sound data	| DAC and speaker|
+
+*Table 2.1. Producer consumer examples.*
+
+Figure 2.7 shows how one could use a mailbox to pass data from a background thread (interrupt service routine) to a foreground 
+thread (main program) if there were no operating system.
+
+![Figure 2.7](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/255e1db381316a256e36850e180866ba/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig02_07_mailboxFlowChart.jpg)
+Figure 2.7. Use of a mailbox without an operating system.
+
+####CHECKPOINT 2.6
+
+What happens if the ISR in Figure 2.7 runs twice before the main program has a chance to read and process the Mail?
+
+With the flowchart in Figure 2.7, the Status will be set twice and the first data value will be lost. We will fix this 
+error in Chapter 3 using a first in first out (FIFO) queue.
+
+
