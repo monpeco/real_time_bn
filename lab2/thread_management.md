@@ -38,7 +38,7 @@ The synchronization problem is basically trying to establish an order of executi
 ###2.1.1. Motivation
 
 *Introduction to threads*
-![Introduction to threads](https://youtu.be/JSFkUR94uLg)
+[Introduction to threads](https://youtu.be/JSFkUR94uLg)
 
 Consider a system with one input task, one output tasks and two non I/O tasks, as shown in Figure 2.1. The non-I/O tasks are called 
 function3 and function4. Here are two possible ways of structuring a solution to the problem. The left side of the figure shows a 
@@ -63,7 +63,7 @@ Figure 2.1. Flowcharts of a system with four loosely coupled tasks.
 ###2.1.2. Introduction to Threads
 
 ####Threads
-![Threads](https://youtu.be/9IY1iVy_uk4)
+[Threads](https://youtu.be/9IY1iVy_uk4)
 
 A Threads is context of execution. So in practice, we have a program.
 A program is a static entity. It doesn't have a life. It's just a piece of code.
@@ -159,7 +159,7 @@ variables will be used, because one thread can write to the global, and another 
 ###2.1.3. States of a main thread
 
 *States*
-!(States)[https://youtu.be/iep01EUwbqo]
+(States)[https://youtu.be/iep01EUwbqo]
 
 A main thread can be in one of four states, as shown in Figure 2.4. The arrows in Figure 2.4 describe the condition causing the thread to change states. 
 In Chapter 2, threads oscillate between the active and run states. In Chapter 2, we will create all main threads at initialization and these main threads 
@@ -195,7 +195,7 @@ an event. A thread that is spinning remains in the active state, and wastes its 
 ###2.1.4. Real-time systems
 
 *Real-time systems*
-![Real-time systems](https://youtu.be/yc1rMDKZrec)
+[Real-time systems](https://youtu.be/yc1rMDKZrec)
 
 Designing a RTOS requires many decisions to be made. Therefore, it is important to have performance criteria with which to evaluate one alternative to another. 
 A common performance criterion used in Real-Time Systems is ___Deadline___, a timing constraint with many definitions in the literature. In this class we will 
@@ -349,7 +349,7 @@ printed per second) diminishes with latency.
 --
 #2.1.5. Producer/Consumer problem
 
-![Producer/consumer](https://youtu.be/fClPWeY1Q84)
+[Producer/consumer](https://youtu.be/fClPWeY1Q84)
 
 One of the classic problems our operating system must handle is communication between threads. We define a ___producer___ thread as one 
 that creates or produces data. A ___consumer___ thread is a thread that consumes (and removes) data. The communication mechanism we will 
@@ -394,7 +394,7 @@ error in Chapter 3 using a first in first out (FIFO) queue.
 
 ###2.1.6. Scheduler
 
-![Scheduler](https://youtu.be/yYZeApNx7Hg)
+[Scheduler](https://youtu.be/yYZeApNx7Hg)
 
 A ___scheduler___ is a OS function that gives threads the notion of Concurrent processing where multiple threads are active. 
 If we look from a distance (zoom out in time) it appears they are running simultaneously, when in fact only one thread is 
@@ -561,7 +561,7 @@ will operate in the 5 to 50% range.
 --
 ###2.1.7. Function Pointers
 
-![Function pointers](https://youtu.be/5LakKUvmOpI)
+[Function pointers](https://youtu.be/5LakKUvmOpI)
 
 As we work our way towards constructing an OS there are some advanced programming concepts we require the reader to be 
 familiar with. One such concept is "___function pointers___". Normally, when a software in module A wishes to invoke software 
