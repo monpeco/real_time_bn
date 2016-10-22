@@ -647,3 +647,26 @@ the OS has finished initialization, the OS is running the scheduler, or whenever
 To use a hook, the user writes a function, calls the OS and passes a function pointer. When that event 
 occurs, the OS calls the user function. Hooks are extremely useful for debugging.
 
+--
+--
+
+###2.2.1. NVIC
+
+[Interrupts](https://youtu.be/eskTBU6oF1k)
+
+On the ARM Cortex-M processor, exceptions include resets, software interrupts and hardware interrupts. Each 
+exception has an associated 32-bit vector that points to the memory location where the ISR that handles the 
+exception is located. Vectors are stored in ROM at the beginning of memory. Program 2.3 shows the first few 
+vectors as defined in the startup_TM4C123.s file for the TM4C123 and the startup_msp432.s file for the MSP432. 
+DCD is an assembler pseudo-op that defines a 32-bit constant. ROM location 0x0000.0000 has the initial stack 
+pointer, and location 0x0000.0004 contains the initial program counter, which is called the reset vector. It 
+holds the address of a function called the reset handler, which is the first thing executed following reset. 
+There are hundreds of possible interrupt sources and their 32-bit vectors are listed in order starting with 
+location 0x0000.0008. From a programming perspective, we can attach ISRs to interrupts by writing the ISRs as 
+regular assembly subroutines or C functions with no input or output parameters and editing the startup_TM4C123.s 
+or startup_msp432.s file to specify those functions for the appropriate interrupt. In this class, we will write 
+our ISRs using standard function names so that the startup files need not be edited. For example, we will 
+simply name the ISR for SysTick periodic interrupt as SysTick_Handler. The ISR for this interrupt is a 32-bit 
+pointer located at ROM address 0x0000.003C. Because the vectors are in ROM, this linkage is defined at compile 
+time and not at run time. After the first 16 vectors, each processor will be different so check the data sheet.
+
