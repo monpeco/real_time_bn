@@ -563,5 +563,87 @@ will operate in the 5 to 50% range.
 
 ![Function pointers](https://youtu.be/5LakKUvmOpI)
 
+As we work our way towards constructing an OS there are some advanced programming concepts we require the reader to be 
+familiar with. One such concept is "___function pointers___". Normally, when a software in module A wishes to invoke software 
+in module B, module A simply calls a function in module B. The function in module B performs some action and returns to 
+A. At this point, typically, this exchange is complete. A ___callback___ is a mechanism through which the software in module B 
+can call back a preset function in module A at a later time. Another name for callback is ___hook___. To illustrate this concept, 
+let module A be the user code and module B be the operating system. To setup a callback, we first write a user function 
+(e.g., `CallMe`), and then the user calls the OS passing this function as a parameter.
 
+```c
+int count;
+void Callme(void){
+  count++;
+}
+```
+
+The OS immediately returns to the user, but at some agreed upon condition, the OS can invoke a call back to the user 
+by executing this function.
+
+As we initialize the operating system, the user code must tell the OS a list of tasks that should be run. More 
+specifically, the user code will pass into the operating system pointers to user functions. In C on the Cortex M, 
+all pointers are 32-bit addresses regardless of the type of pointer. A function pointer is simply a pointer to a 
+function. In this class all tasks or threads will be defined as void-void functions, like `Callme`. In other words, 
+threads take no inputs and return no output. There are three operations we can perform on function pointers. The 
+first is declaring a function pointer variable. Just like other pointers, we specify the type and add * in front 
+of the name. We think it is good style to include ___p___, ___pt___, or ___ptr___ in pointer names. In this case, 
+the syntax looks like this
+
+```c
+void (*TaskPt)(void);
+```
+
+Although the above line looks a little bit like a prototype, we can read this declaration as `TaskPt` is a pointer 
+to a function that takes no input and returns no output.
+
+Just like other variables, we need to set its value before using it. To set a function pointer we assign it a 
+value of the proper type. In this case, TaskPt is a pointer to a void-void function, so we assign it the address 
+of a void-void function by executing this code at run time.
+
+```c
+TaskPt = &Callme; // TaskPt points to Callme
+```
+
+Just like other pointers (to variables), to access what a pointer is pointing to, we dereference it using *. 
+In this case, to run the function we execute
+
+```c
+TaskPt = &Callme; // TaskPt points to Callme
+```
+
+As an example, let’s look at one of the features in the BSP package. The function `BSP_PeriodicTask_Init` will 
+initialize a timer so a user function will run periodically. Notice the user function is called from inside 
+the interrupt service routine.
+
+```c
+void (*PeriodicTask)(void); // user function
+void BSP_PeriodicTask_Init(
+  void(*task)(void), // user function
+  uint32_t freq,     // frequency in Hz
+  uint8_t priority){ // priority
+// . . . PeriodicTask = task; // user function
+// . . .
+}
+void T32_INT1_IRQHandler(void){
+  TIMER32_INTCLR1 = 0x00000001; // acknowledge interrupt
+  (*PeriodicTask)();            // execute user task
+}
+```
+
+The user code creates a void-void function and calls BSP_PeriodicTask_Init to attach this function to the 
+periodic interrupt:
+
+```c
+BSP_PeriodicTask_Init(&checkbuttons, 10, 2);
+```
+
+You will NOT use `BSP_PeriodicTask_Init` in Lab 2, but will add it within Lab 3. However you will need 
+to understand function pointers to implement Lab 2.
+
+Another application of function pointers is a hook. A hook is an OS feature that allows the user to attach 
+functions to strategic places in the OS. Examples of places we might want to place hooks include: whenever 
+the OS has finished initialization, the OS is running the scheduler, or whenever a new thread is created. 
+To use a hook, the user writes a function, calls the OS and passes a function pointer. When that event 
+occurs, the OS calls the user function. Hooks are extremely useful for debugging.
 
