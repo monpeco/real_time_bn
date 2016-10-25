@@ -958,6 +958,297 @@ allows us to measure both the time to execution of one instance of the ISR and t
 *Figure 2.13. Profile of multiple executions of the SysTick ISR on a TM4C123 running at 16 MHz.*
 
 
+--
+--
+
+###2.2.3. Critical sections
+
+[Critical sections](https://youtu.be/X09ymbgQrLs)
+
+![](![critical_section](https://cloud.githubusercontent.com/assets/16638078/19686922/cabdf506-9a99-11e6-92d0-2d1860d7ea2f.png))
+
+
+
+An important consequence of multi-threading is the potential for the threads to manipulate 
+(read/write) a shared object. With this potential comes the possibility of inconsistent 
+updates to the shared object. A ___race condition____ occurs in a multi-threaded environment 
+when there is a causal dependency between two or more threads. In other words, different 
+behavior occurs depending on the order of execution of two threads. Consider a ___simple example___ 
+of a race condition occurring where two thread initialize the same port in an unfriendly manner. 
+Thread-1 initializes Port 4 bits 3 – 0 to be output using `P4DIR = 0x0F;` Thread-2 initializes 
+Port 4 bits 6 – 4 to be output using `P4DIR = 0x70;` In particular, if Thread-1 runs first 
+and Thread-2 runs second, then Port 4 bits 3 – 0 will be set to inputs. Conversely, if Thread-2 
+runs first and Thread-1 runs second, then Port 4 bits 6 – 4 will be set to inputs. This is a 
+race condition caused by unfriendly code. The solution to this problem is to write the two 
+initializations in a friendly manner, and make both initializations atomic.
+
+In a ___second example___ of a race condition, assume two threads are trying to get data from 
+the same input device. Both call the input function to receive data from the input device. 
+When data arrives at the input, the thread that executes first will capture the data.
+
+In general, if two threads access the same global memory and one of the accesses is a write, 
+then there is a ___causal dependency___ between the execution of the threads. Such dependencies 
+when not properly handled cause unpredictable behavior where the execution order may affect 
+the outcome. Such scenarios are referred to as race conditions. While shared global variables 
+are important in multithreaded systems because they are required to pass data between threads, 
+they result in complex behavior (and hard to find bugs). Therefore, a ___programmer must pay 
+careful attention to avoid race conditions___.
+
+A program segment is ___reentrant__ if it can be concurrently executed by two (or more) threads. 
+Note that, to run concurrently means both threads are ready to run though only one thread is 
+currently running. To implement ___reentrant software___, we place variables in registers or on the 
+stack, and avoid storing into global memory variables. When writing in assembly, we use registers, 
+or the stack for parameter passing to create reentrant subroutines. Typically, each thread will 
+have its own set of registers and stack. A ___non-reentrant___ subroutine will have a section 
+of code called a ___vulnerable window___ or ___critical section___. A critical section may exist 
+when two different functions access and modify the same memory-resident data structure. An error 
+occurs if 
+
+1. One thread calls a non-reentrant function
+2. It is executing in the critical section when interrupted by a second thread
+3. The second thread calls the same non-reentrant function.
+
+There are a number of scenarios that can happen next. In the ___most common scenario___, the second 
+thread is allowed to complete the execution of the function, control is then returned to the 
+first thread, and the first thread finishes the function. This first scenario is the usual case 
+with interrupt programming. In the ___second scenario___, the second thread executes part of 
+the critical section, is interrupted and then re-entered by a third thread, the third thread 
+finishes, the control is returned to the second thread and it finishes, lastly the control 
+is returned to the first thread and it finishes. This second scenario can happen in interrupt 
+programming if the second interrupt has higher priority than the first. Program 2.5 shows 
+two C functions and the corresponding assembly codes. These functions have critical sections 
+because of their ___read-modify-write nonatomic access___ to the global variable, count. If an 
+interrupt were to occur just before or just after the ADD or SUB instruction, and the ISR 
+called the other function, then count would be in error.
+
+```asm
+count    SPACE  4    
+Producer LDR  r1,[pc,#116] ; R0= &count
+         LDR  r0,[r1]      ; R0=count
+         ADD  r0,r0,#1
+         STR  r0,[r1]      ; update 
+         BX   lr
+Consumer LDR  r1,[pc,#96]  ; R0= &count
+         LDR  r0,[r1]      ; R0=count
+         SUB  r0,r0,#1
+         STR  r0,[r1]      ; update 
+         BX   lr
+         DCD  num     	int32_t volatile count;
+
+```
+
+```c
+void Producer(void){  
+  // other stuff  
+  count = count + 1;
+    // other stuff 
+}
+void Consumer(void){
+  // other stuff
+  count = count – 1;
+  // other stuff
+}
+```
+
+*Program 2.5. These functions are nonreentrant because of the read-modify-write access to a global. The critical section is just before and just after the ADD and SUB instructions.*
+
+Assume there are two concurrent threads, where the main program calls Producer and a background 
+ISR calls Consumer. ___Concurrent___ means that both threads are ready to run. Because there is 
+only one computer, exactly one thread will be running at a time. Typically, the operating system 
+switches execution control back and forth using interrupts. There are two places in the assembly 
+code of Producer at which if an interrupt were to occur and the ISR called the Consumer function, 
+the end value of count will be inconsistent. Assume for this example count is initially 4. An 
+error occurs if:
+
+1. The main program calls Producer
+2. The main executes LDR r0,[r1]
+  * making R0 = 4
+3. The OS suspends the main (using an interrupt) and starts the ISR
+4. The ISR calls Consumer
+  * Executes count=count-1; making count equal to 3
+5. The OS returns control back to the main program
+  * R0 is back to its original value of 4
+6. The producer finishes (adding 1 to R0) Making count equal to 5
+
+The expected behavior with the producer and consumer executing once is that count would remain 
+at 4. However, the race condition resulted in an inconsistency manifesting as a lost consumption. 
+As the reader may have observed, the cause of the problem is the non-atomicity of the 
+read-modify-write operation involved in reading and writing to the count (count=count+1 
+or count=count-1) variable. An ___atomic operation___ is one that once started is guaranteed to finish. 
+In most computers, once an assembly instruction has begun, the instruction must be finished 
+before the computer can process an interrupt. The same is not the case with C instructions 
+which themselves translate to multiple assembly instructions. In general, nonreentrant code 
+can be grouped into three categories all involving 1) nonatomic sequences, 2) writes and 3) 
+global variables. We will classify I/O ports as global variables for the consideration of 
+critical sections. We will group registers into the same category as local variables because 
+each thread will have its own registers and stack.
+
+The first group is the ___read-modify-write___ sequence:
+
+1. The software reads the global variable producing a copy of the data
+2. The software modifies the copy (original variable is still unmodified)
+3. The software writes the modification back into the global variable.
+
+In the second group, we have a ___write followed by read___, where the global variable is used for 
+temporary storage:
+
+1. The software writes to the global variable (only copy of the information)
+2. The software reads from the global variable expecting the original data to be there.
+
+In the third group, we have a ___non-atomic multi-step write___ to a global variable:
+
+1. The software writes part of the new value to a global variable
+2. The software writes the rest of the new value to a global variable.
+
+*Observation: When considering reentrant software and vulnerable windows we classify 
+accesses to I/O ports the same as accesses to global variables.*
+
+*Observation: Sometimes we store temporary information in global variables out of laziness. 
+This practice is to be discouraged because it wastes memory and may cause the module to not 
+be reentrant.*
+
+Sometimes we can have a critical section between two different software functions (one function 
+called by one thread, and another function called by a different thread). In addition to above 
+three cases, a ___non-atomic multi-step___ read will be critical when paired with a 
+___multi-step write___. 
+For example, assume a data structure has multiple components (e.g., hours, minutes, and seconds). 
+In this case, the write to the data structure will be atomic because it occurs in a high priority 
+ISR. The critical section exists in the foreground between steps 1 and 3. In this case, a critical 
+section exists even though no software has actually been reentered.
+
+
+| Foreground thread |
+| ----------------- |
+| 1. The main reads some of the data |
+| 3. The main reads the rest of the data |
+
+| Background thread |
+| ----------------- |
+| 2. ISR writes to the data structure |
+
+In a similar case, a non-atomic multi-step write will be critical when paired with a multi-step 
+read. Again, assume a data structure has multiple components. In this case, the read from the 
+data structure will be atomic because it occurs in a high priority ISR. The critical section 
+exists in the foreground between steps 1 and 3.
+
+| Foreground thread |
+| ----------------- |
+| 1. The main writes some of the data |
+| 3. The main writes the rest of the data Background thread	|
+
+| Background thread |
+| ----------------- |
+| 2. ISR reads from the data structure |
+
+When multiple threads are active, it is possible for two threads to be executing the same program. For example, the system may be running in the foreground and calls a function. Part way through execution of the function, an interrupt occurs. If the ISR also calls the same function, two threads are simultaneously executing the function.
+
+If critical sections do exist, we can either eliminate them by removing the access to the global 
+variable or implement mutual exclusion, which simply means only one thread at a time is allowed 
+to execute in the critical section. In general, if we can eliminate the global variables, then 
+the subroutine becomes reentrant. Without global variables there are no "vulnerable" windows 
+because each thread has its own registers and stack. Sometimes one must access global memory to 
+implement the desired function. Remember that all I/O ports are considered global. Furthermore, 
+global variables are necessary to pass data between threads. Program 2.6 shows four functions 
+available in the starter projects for this class that can be used to implement mutual exclusion. 
+The code is in the startup file and the prototypes are in the ___CortexM.h___ file.
+
+```asm
+;*********** DisableInterrupts ***************
+; disable interrupts 
+; inputs:  none
+; outputs: none
+DisableInterrupts
+        CPSID  I
+        BX     LR
+;*********** EnableInterrupts ***************
+; disable interrupts 
+; inputs:  none
+; outputs: none 
+EnableInterrupts
+       CPSIE  I
+       BX     LR
+;*********** StartCritical ************************
+; make a copy of previous I bit, disable interrupts
+; inputs:  none
+; outputs: previous I bit
+StartCritical
+        MRS    R0, PRIMASK  ; save old status
+        CPSID  I            ; mask all (except faults)
+        BX     LR 
+;*********** EndCritical ************************
+; using the copy of previous I bit, restore I bit to previous value  
+; inputs:  previous I bit
+; outputs: none  
+EndCritical    
+        MSR    PRIMASK, R0
+        BX     LR
+```
+
+*Program 2.6. Assembly functions needed for interrupt enabling and disabling.*
+
+A simple way to implement mutual exclusion is to disable interrupts while executing the 
+critical section. It is important to disable interrupts for as short a time as possible, 
+so as to minimize the effect on the dynamic performance of the other threads. While we are 
+running with interrupts disabled, time-critical events like power failure and danger 
+warnings cannot be processed. The assembly code of Program 2.6 is in the startup file in 
+our projects that use interrupts. Program 2.7 illustrates how to implement mutual 
+exclusion and eliminate the critical section.
+
+```c
+uint32_t volatile count;
+void Producer(void){   // simple option
+  DisableInterrupts();  
+  count = count + 1;
+  EnableInterrupts();  
+}
+void Producer(void){   // safer option
+long sr;
+  sr = StartCritical();  
+  count = count + 1;
+  EndCritical(sr);  
+}
+```
+
+*Program 2.7. This function is reentrant because of the read-modify-write access to the 
+global is atomic. Use the simple option only if one critical section is not nested insid
+e another critical section.*
+
+When making code atomic with this simple method, make sure one critical section is not 
+nested inside another critical section.
+
+####CHECKPOINT 2.10
+
+Although disabling interrupts does remove critical sections, it will add latency and 
+jitter to real-time systems. Explain how latency and jitter are affected by the 
+`DisableInterrupts()` and `EnableInterrupts()` functions.
+
+
+####CHECKPOINT 2.11
+
+Consider the situation of nested critical sections. For example, a function with a critical 
+section calls another function that also has a critical section. What would happen if you 
+simply added disable interrupts at the beginning and a re-enable interrupts at the end of 
+each critical section?
+
+Notice there are two disable interrupt and two enable interrupt functions, occurring in 
+this order: 1) disable, 2) disable, 3) enable, 4) enable. Interrupts will be incorrectly 
+enabled after step 3). Since the 1-4 represents a critical section and 2-3 is inside this 
+section, a bug will probably be introduced.
+
+Since real-time events trigger interrupts, and the ISR software services the requests, 
+disabling interrupts will postpone the response causing latency or jitter. The maximum 
+jitter will be the maximum time running with interrupts disabled.
+
+###The Game
+
+[The Game](https://youtu.be/kRvRXyGIRKg)
+
+
+
+
+
+
+
 
 
 
