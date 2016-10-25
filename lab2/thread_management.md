@@ -654,19 +654,185 @@ occurs, the OS calls the user function. Hooks are extremely useful for debugging
 
 [Interrupts](https://youtu.be/eskTBU6oF1k)
 
+![interrupts](https://cloud.githubusercontent.com/assets/16638078/19670786/9317fe02-9a40-11e6-94bc-b9ba721985f1.png)
+
+####How Interrups work
+1. Interrup Vector Table
+2. Initializacion (one-time)
+  a. Setup communication mechanisn
+  b. ARM/Enable the device
+  c. Priority (3-bits, 0-Highest, 7-lowest)
+  d. Enable all interrups (I=0)
+3. ISR (Interrupt Service Rutine)
+  a. ACK the interrupt
+  b. Action
+
+####Hardware
+
+![hardware](https://cloud.githubusercontent.com/assets/16638078/19671860/39d79e1c-9a48-11e6-898a-cd4d877bb0f6.png)
+
+Condition for an Interrup to have effect
+1. Triggers
+2. I=0
+3. NVIC (Nested-Vector Interrupt Control) (Flag configured - ARM)
+4. Priority must be higher that the current thread
+
+Saving state of current thread
+1. Push registers 8 of them (R0-R3, R12, PC(R15), LR(R14), PSR(NVZC) )
+2. PC <- IVT (Interrupt Vector Table)
+3. IPSR <- Interrup Number
+4. LR <- 0xFFFF FFF9
+
+
+
 On the ARM Cortex-M processor, exceptions include resets, software interrupts and hardware interrupts. Each 
 exception has an associated 32-bit vector that points to the memory location where the ISR that handles the 
 exception is located. Vectors are stored in ROM at the beginning of memory. Program 2.3 shows the first few 
-vectors as defined in the startup_TM4C123.s file for the TM4C123 and the startup_msp432.s file for the MSP432. 
+vectors as defined in the startup_TM4C123.s file for the TM4C123 and the ___startup_msp432.s___ file for the MSP432. 
 DCD is an assembler pseudo-op that defines a 32-bit constant. ROM location 0x0000.0000 has the initial stack 
 pointer, and location 0x0000.0004 contains the initial program counter, which is called the reset vector. It 
 holds the address of a function called the reset handler, which is the first thing executed following reset. 
 There are hundreds of possible interrupt sources and their 32-bit vectors are listed in order starting with 
 location 0x0000.0008. From a programming perspective, we can attach ISRs to interrupts by writing the ISRs as 
 regular assembly subroutines or C functions with no input or output parameters and editing the startup_TM4C123.s 
-or startup_msp432.s file to specify those functions for the appropriate interrupt. In this class, we will write 
+or ___startup_msp432.s___ file to specify those functions for the appropriate interrupt. In this class, we will write 
 our ISRs using standard function names so that the startup files need not be edited. For example, we will 
-simply name the ISR for SysTick periodic interrupt as SysTick_Handler. The ISR for this interrupt is a 32-bit 
+simply name the ISR for SysTick periodic interrupt as ___SysTick_Handler___. The ISR for this interrupt is a 32-bit 
 pointer located at ROM address 0x0000.003C. Because the vectors are in ROM, this linkage is defined at compile 
 time and not at run time. After the first 16 vectors, each processor will be different so check the data sheet.
+
+```asm
+        EXPORT  __Vectors
+__Vectors                             ; address    ISR
+        DCD     StackMem + Stack      ; 0x00000000 Top of Stack
+        DCD     Reset_Handler         ; 0x00000004 Reset Handler
+        DCD     NMI_Handler           ; 0x00000008 NMI Handler
+        DCD     HardFault_Handler     ; 0x0000000C Hard Fault Handler
+        DCD     MemManage_Handler     ; 0x00000010 MPU Fault Handler
+        DCD     BusFault_Handler      ; 0x00000014 Bus Fault Handler
+        DCD     UsageFault_Handler    ; 0x00000018 Usage Fault Handler
+        DCD     0                     ; 0x0000001C Reserved
+        DCD     0                     ; 0x00000020 Reserved
+        DCD     0                     ; 0x00000024 Reserved
+        DCD     0                     ; 0x00000028 Reserved
+        DCD     SVC_Handler           ; 0x0000002C SVCall Handler
+        DCD     DebugMon_Handler      ; 0x00000030 Debug Monitor Handler
+        DCD     0                     ; 0x00000034 Reserved
+        DCD     PendSV_Handler        ; 0x00000038 PendSV Handler
+        DCD     SysTick_Handler       ; 0x0000003C SysTick Handler
+```
+*Program 2.3. Software syntax to set the interrupt vectors for the first 16 vectors on the Cortex M processor.*
+
+Table 2.2 lists the interrupt sources we will use on the TM4C123 and Table 
+2.3 shows similar interrupts on the MSP432. Interrupt numbers 0 to 15 contain 
+the faults, software interrupts and SysTick; these interrupts will be handled 
+differently from interrupts 16 to 154.
+
+| Vector address	| Number	| IRQ	| ISR name in Startup.s	| NVIC priority	| Priority bits |
+|---------------|-----------|-------|-----------------------|---------------|---------------|
+| 0x00000038	| 14	| -2	| PendSV_Handler	| SYS_PRI3	| 23 – 21 | 
+| 0x0000003C	| 15	| -1	| SysTick_Handler	| SYS_PRI3	| 31 – 29 |
+| 0x000001E0	| 120	| 104	| WideTimer5A_Handler	| NVIC_PRI26_R	| 7 – 5 |
+
+*Table 2.2. Some of the interrupt vectors for the TM4C (goes to number 154 on the M4).*
+
+| Vector address	| Number	| IRQ	| ISR name in Startup.s	| NVIC priority	| Priority bits |
+|---------------|-----------|-------|-----------------------|---------------|---------------|
+| 0x00000038	| 14	| -2	| PendSV_Handler	| SYS_PRI3	| 23 – 21 |
+| 0x0000003C	| 15	| -1	| SysTick_Handler	| SYS_PRI3	| 31 – 29 |
+| 0x000000A4	| 41	| 25	| T32_INT1_IRQHandler	| NVIC_IPR6	| 15 – 13 |
+
+*Table 2.3. Some of the interrupt vectors for the MSP432 (goes to number 154 on the M4).*
+
+Interrupts on the Cortex-M are controlled by the Nested Vectored Interrupt 
+Controller (NVIC). To activate an interrupt source we need to set its priority 
+and enable that source in the NVIC. SysTick interrupt only requires arming the 
+SysTick module for interrupts and enabling interrupts on the processor 
+(I=0 in the ___PRIMASK___). Other interrupts require additional initialization. 
+addition to arming and enabling, we will set bit 8 in the ___NVIC_EN3_R___ to 
+activate ___WideTimer5A___ interrupts on the TM4C123. Similarly, we will set bit 
+25 in the ___NVIC_ISER0___ to activate ___T32_INT1___ interrupts on the MSP432. This 
+activation is in addition to the arm and enable steps.
+
+Each interrupt source has an 8-bit priority field. However, on the 
+TM4C123 and MSP432 microcontrollers, only the top three bits of the 8-bit 
+field are used. This allows us to specify the interrupt priority level 
+for each device from 0 to 7, with 0 being the highest priority. The 
+priority of the SysTick interrupt is found in bits 31 – 29 of the 
+___SYS_PRI3___ register. Other interrupts have corresponding priority 
+registers. The interrupt number (number column in Tables 2.2 and 2.3) 
+is loaded into the ___IPSR___ register when an interrupt is being serviced. 
+The servicing of interrupts does not set the I bit in the ___PRIMASK___, so a 
+higher priority interrupt can suspend the execution of a lower priority 
+ISR. If a request of equal or lower priority is generated while an ISR is 
+being executed, that request is postponed until the ISR is completed. In 
+particular, those devices that need prompt service should be given high 
+priority.
+
+Figure 2.10 shows the context switch from executing in the foreground to 
+running a SysTick periodic interrupt. The I bit in the ___PRIMASK___ is 0 
+signifying interrupts are enabled. Initially, the interrupt number 
+(___ISRNUM___) in the ___IPSR___ register is 0, meaning we are running in ___Thread 
+mode___ (i.e., the main program, and not an ISR). Handler mode is 
+signified by a nonzero value in ___IPSR___. When ___BASEPRI___ register is 
+zero, all interrupts are allowed and the ___BASEPRI___ register is not 
+active.
+
+When a SysTick interrupt is triggered, the current instruction is finished. 
+(a) Eight registers are pushed on the stack with ___R0___ on top. These registers 
+are pushed onto the stack using whichever stack pointer is active: either 
+the ___MSP___ or ___PSP___. (b) The vector address is loaded into the ___PC___ (“Vector 
+address” column in Tables 2.2 and 2.3). (c) The ___IPSR___ register is set to 
+15 (“Number” column in Tables 2.2 and 2.3) (d) The top 24 bits of ___LR___ are 
+set to 0xFFFFFF, signifying the processor is executing an ISR. The bottom 
+eight bits specify how to return from interrupt.
+
+```
+0xE1 Return to Handler mode MSP (using floating point state)
+0xE9 Return to Thread mode MSP (using floating point state)
+0xED Return to Thread mode PSP (using floating point state)
+0xF1 Return to Handler mode MSP
+0xF9 Return to Thread mode MSP ← we will mostly be using this one
+0xFD Return to Thread mode PSP
+```
+
+After pushing the registers, the processor always uses the main stack pointer 
+(___MSP___) during the execution of the ISR. Events b, c, and d can occur simultaneously.
+
+![Figure 2.10](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/6f55d6c67ffce5dbc647b7ef1091106e/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig02_09_Interrupt_stack.jpg)
+*Figure 2.10. Stack before and after an interrupt, in this case a SysTick periodic interrupt.*
+
+To ___return from an interrupt___, the ISR executes the typical function return 
+statement: BX LR. However, since the top 24 bits of LR are 0xFFFFFF, it knows 
+to return from interrupt by popping the eight registers off the stack. Since 
+the bottom eight bits of LR in this case are 0b11111001, it returns to thread 
+mode using the MSP as its stack pointer. Since the IPSR is part of the PSR that 
+is popped, it is automatically reset to its previous state.
+
+A nested interrupt occurs when a higher priority interrupt suspends an ISR. 
+The lower priority interrupt will finish after the higher priority ISR completes. 
+When one interrupt preempts another, the LR is set to 0xFFFFFFF1, so it knows to 
+return to handler mode. ___Tail chaining___ occurs when one ISR executes immediately 
+after another. Optimization occurs because the eight registers need not be 
+popped only to be pushed once again. If an interrupt is triggered and is in 
+the process of stacking registers when a higher priority interrupt is requested, 
+this late arrival interrupt will be executed first.
+
+On the Cortex-M4, if an interrupt occurs while in the floating point state, 
+an additional 18 words are pushed on the stack. These 18 words will save the 
+state of the floating point processor. Bits 7-4 of the LR will be 0b1110 (0xE), 
+signifying it was interrupted during a floating point state. When the ISR 
+returns, it knows to pull these 18 words off the stack and restore the state 
+of the floating point processor. We will not use floating point in this class.
+
+___Priority___ determines the order of service when two or more requests are made simultaneously. Priority also allows a higher priority request to suspend a lower priority request currently being processed. Usually, if two requests have the same priority, we do not allow them to interrupt each other. NVIC assigns a priority level to each interrupt trigger. This mechanism allows a higher priority trigger to interrupt the ISR of a lower priority request. Conversely, if a lower priority request occurs while running an ISR of a higher priority trigger, it will be postponed until the higher priority service is complete.
+
+
+
+
+
+
+
+
+
 
