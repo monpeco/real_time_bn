@@ -828,6 +828,141 @@ of the floating point processor. We will not use floating point in this class.
 ___Priority___ determines the order of service when two or more requests are made simultaneously. Priority also allows a higher priority request to suspend a lower priority request currently being processed. Usually, if two requests have the same priority, we do not allow them to interrupt each other. NVIC assigns a priority level to each interrupt trigger. This mechanism allows a higher priority trigger to interrupt the ISR of a lower priority request. Conversely, if a lower priority request occurs while running an ISR of a higher priority trigger, it will be postponed until the higher priority service is complete.
 
 
+--
+--
+
+###2.2.2. SysTick periodic interrupts
+
+[SysTick](https://youtu.be/Xk243_TJGjs)
+
+![systick](https://cloud.githubusercontent.com/assets/16638078/19685775/899c57c0-9a94-11e6-977d-a7dd8703343a.png)
+
+The ____SysTick Timer____ is a core device on the Cortex M architecture, which is most commonly used as a periodic timer. When used as a 
+periodic timer one can setup the countdown to zero event to cause an interrupt. By setting up an initial reload value the timer 
+is made to periodically interrupt at a predetermined rate decided by the reload value. Periodic timers as an interfacing technique 
+are required for data acquisition and control systems, because software servicing must be performed at accurate time intervals. 
+For a data acquisition system, it is important to establish an accurate sampling rate. The time in between ADC samples must be 
+equal (and known) in order for the digital signal processing to function properly. Similarly, for microcontroller-based control 
+systems, it is important to maintain both the input rate of the sensors and the output rate of the actuators. Periodic events are 
+so important that most microcontrollers have multiple ways to generate periodic interrupts.
+
+*In this class our operating system will use periodic interrupts to schedule threads.*
+
+Assume we have a 1-ms periodic interrupt. This means the interrupt service routine (ISR) is triggered to run 1000 times per second. 
+Let Count be a global variable that is incremented inside the ISR. Figure 2.11 shows how to use the interrupt to run Task 1 every N ms 
+and run Task 2 every M ms.
+
+![Figure 2.11](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/b7fc7c278a5e9f3dfdbba91580e1718e/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig02_10_PeriodicPollingFlowcharts.jpg)
+*Figure 2.11. Using a 1-ms periodic interrupt to run Task 1 every N ms and run Task 2 every M ms.*
+
+The SysTick timer exists on all Cortex-M microcontrollers, so using SysTick means the system will be easy to port to other microcontrollers. 
+Table 2.4 shows the register definitions for SysTick. The basis of SysTick is a 24-bit down counter that runs at the bus clock frequency. 
+To configure SysTick for periodic interrupts we first clear the ENABLE bit to turn off SysTick during initialization, see Program 2.4. 
+Second, we set the ___STRELOAD___ register. Third, we write any value to the ____STCURRENT____, which will clear the counter and the flag. Lastly, we 
+write the desired clock mode to the control register ____STCTRL____, also setting the ____INTEN____ bit to enable interrupts and enabling the timer (____ENABLE____). 
+We establish the priority of the SysTick interrupts using the TICK field in the ____SYSPRI3____ register. When the ____STCURRENT____ value counts down from 
+1 to 0, the COUNT flag is set. On the next clock, the ____STCURRENT____ is loaded with the STRELOAD value. In this way, the SysTick counter (____STCURRENT____) 
+is continuously decrementing. If the ____STRELOAD____ value is n, then the SysTick counter operates at modulo n+1:
+
+
+*…n, n-1, n-2 … 1, 0, n, n-1, …*
+
+
+In other words, it rolls over every n+1 counts. Thus, the ____COUNT____ flag will be configured to trigger an interrupt every n+1 counts. The main program will 
+enable interrupts in the processor after all variables and devices are initialized.
+
+![Table 2.4](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/837c002d838029c4ffc498167982d8ec/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Table2.4_SysTickRegisters.jpg)
+*Table 2.4. SysTick registers.*
+
+
+The SysTick counter decrements every bus cycle. So it is important to know the bus frequency when using SysTick. TM4C123 projects run at 16 MHz until the system 
+calls BSP_Clock_InitFastest, at which time it will run at 80 MHz. ___MSP432____ projects run at 3 MHz until the system calls `BSP_Clock_InitFastest`, at which time it will 
+run at 48 MHz. In general, if the period of the core bus clock is t time units, then the ___COUNT___ flag will be set every (n+1)t time units. Reading the ___STCTRL___ control 
+register will return the COUNT flag in bit 16, and then clear the flag. Also, writing any value to the ___STCURRENT___ register will reset the counter to zero and clear 
+the COUNT flag. The ___COUNT___ flag is also cleared automatically as the interrupt service routine is executed.
+
+Let fBUS be the frequency of the bus clock, and let n be the value of the ___STRELOAD___ register. The frequency of the periodic interrupt will be
+
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mfrac>
+    <msub>
+      <mi>f</mi>
+      <mrow class="MJX-TeXAtom-ORD">
+        <mi>B</mi>
+        <mi>U</mi>
+        <mi>S</mi>
+      </mrow>
+    </msub>
+    <mrow>
+      <mi>n</mi>
+      <mo>+</mo>
+      <mn>1</mn>
+    </mrow>
+  </mfrac>
+</math>
+
+```c
+void SysTick_Init(uint32_t period){
+  Profile_Init();
+  Counts = 0;
+  STCTRL = 0;         // disable SysTick during setup
+  STRELOAD = period-1;// reload value
+  STCURRENT = 0;      // any write to current clears it
+  SYSPRI3 = (SYSPRI3&0x00FFFFFF)|0x40000000; // priority 2  
+          STCTRL = 0x07;      // enable, core clock, interrupts
+}
+// Interrupt service routine
+// Executed every (bus cycle)*(period)
+void SysTick_Handler(void){
+  Profile_Toggle0();          // toggle bit
+  Profile_Toggle0();          // toggle bit
+  Counts = Counts + 1;
+  Profile_Toggle0();          // toggle bit
+}
+int main(void){  // TM4C123 with bus clock at 16 MHz
+  SysTick_Init(1600000);      // initialize SysTick timer
+  EnableInterrupts();
+  while(1){                   // interrupts every 100ms, 5 Hz flash
+    Profile_Toggle1();        // toggle bit
+  }
+ }
+```
+
+*Program 2.4. Implementation of a periodic interrupt using SysTick (SysTickInts_xxx).*
+
+###Running SysTick on the real board
+
+[Running SysTick on the real board](https://youtu.be/UTPeQQQnF1A)
+
+![](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/840506fb439e6b073c2ef75b38ad8b5d/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/SysTickInterrupt.gif)
+
+###CHECKPOINT 2.9
+
+If the bus clock is 80 MHz (12.5ns), what reload value yields a 100 Hz (10ms) periodic interrupt?
+
+(80MHz/100Hz - 1) =799999. 10ms = (799999+1)*12.5ns. Reload should be 799999.
+
+
+Figure 2.12 shows a zoomed in view of the profile pin measured during one execution of the SysTick ISR. The first two toggles signify 
+the ISR has started. The time from second to third toggle illustrates the body of the ISR takes 1.2 µs of execution time.
+
+![Figure 2.12](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/3ab07b6adcb21c8c9bf21ae230475392/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig02_11_tripleToggleZoomIn.jpg)
+*Figure 2.12. Profile of a single execution of the SysTick ISR measured on a TM4C123 running at 16 MHz.*
+
+Figure 2.13 shows a zoomed out view of the profile pin measured during multiple executions of the SysTick ISR. This measurement verifies 
+the ISR runs every 100 ms. Because of the time scale, the three toggles appear as a single toggle. This ___triple-toggle technique (TTT)___ 
+allows us to measure both the time to execution of one instance of the ISR and to measure the time between ISR executions.
+
+
+![Figure 2.13](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/9ae18d91b119ab8e52ad835baa848756/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig02_12_TripleToggeZoomOut.jpg)
+*Figure 2.13. Profile of multiple executions of the SysTick ISR on a TM4C123 running at 16 MHz.*
+
+
+
+
+
+
+
 
 
 
