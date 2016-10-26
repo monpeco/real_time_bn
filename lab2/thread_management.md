@@ -1335,4 +1335,241 @@ int32_t Stacks[NUMTHREADS][STACKSIZE];
 ![Figure 2.15](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/87b50a40b12c1d5d8549816c77d05e48/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig02_15_ThreadSwitch.jpg)
 *Figure 2.15. The running thread uses the actual registers, while the other threads have their register values saved on the stack. For the running thread the sp field is not valid, while the sp field on other threads points to the top of its stack.*
 
+--
+--
 
+###2.3.3. Creation of threads
+
+[Creation of threads](https://youtu.be/VRUlnQ-sHho)
+
+
+Program 2.9 shows how to create three TCBs that will run three programs. First, the three TCBs are linked in a circular list. Next the initial stack for each thread is created in such a way that it looks like it has been running already and has been previously suspended. The PSR must have the T-bit equal to 1 because the Arm Cortex M processor always runs in Thumb mode. The PC field on the stack contains the starting address of each thread. The initial values for the other registers do not matter, so they have been initialized to values that will assist in debugging. This idea came from the ___os_cpu_c.c___ file in Micrium µC/OS-II. The allocation of the stack areas must be done such that the addresses are double-word aligned.
+
+```c
+void SetInitialStack(int i){ 
+  tcbs[i].sp = &Stacks[i][STACKSIZE-16]; // thread stack pointer 
+  Stacks[i][STACKSIZE-1] = 0x01000000; // Thumb bit 
+  Stacks[i][STACKSIZE-3] = 0x14141414; // R14 
+  Stacks[i][STACKSIZE-4] = 0x12121212; // R12 
+  Stacks[i][STACKSIZE-5] = 0x03030303; // R3 
+  Stacks[i][STACKSIZE-6] = 0x02020202; // R2 
+  Stacks[i][STACKSIZE-7] = 0x01010101; // R1 
+  Stacks[i][STACKSIZE-8] = 0x00000000; // R0 
+  Stacks[i][STACKSIZE-9] = 0x11111111; // R11 
+  Stacks[i][STACKSIZE-10] = 0x10101010; // R10 
+  Stacks[i][STACKSIZE-11] = 0x09090909; // R9 
+  Stacks[i][STACKSIZE-12] = 0x08080808; // R8 
+  Stacks[i][STACKSIZE-13] = 0x07070707; // R7 
+  Stacks[i][STACKSIZE-14] = 0x06060606; // R6 
+  Stacks[i][STACKSIZE-15] = 0x05050505; // R5 
+  Stacks[i][STACKSIZE-16] = 0x04040404; // R4 
+} 
+int OS_AddThreads(void(*task0)(void), void(*task1)(void), 
+        void(*task2)(void)){ 
+int32_t status; 
+  status = StartCritical(); 
+  tcbs[0].next = &tcbs[1]; // 0 points to 1 
+  tcbs[1].next = &tcbs[2]; // 1 points to 2 
+  tcbs[2].next = &tcbs[0]; // 2 points to 0 
+
+  SetInitialStack(0); Stacks[0][STACKSIZE-2] = (int32_t)(task0); // PC
+  SetInitialStack(1); Stacks[1][STACKSIZE-2] = (int32_t)(task1); // PC
+  SetInitialStack(2); Stacks[2][STACKSIZE-2] = (int32_t)(task2); // PC
+  RunPt = &tcbs[0];        // thread 0 will run first 
+  EndCritical(status); 
+  return 1; // successful 
+}
+```
+*Program 2.9. OS code used to create three active threads.*
+
+Even though the thread has not yet been run, it is created with an initial stack that “looks like” it had been previously suspended by a SysTick interrupt. Notice that the initial value loaded into the PSR when the thread runs for the first time has T=1.Program 2.10 shows simple user software that can be run on this RTOS. Each thread increments a counter and toggles an output pin. The three counters should be approximately equal. Profile bit 0 toggles quickly while thread 0 is running. Profile bits 1 and 2 toggle when running threads 1 and 2 respectively.
+
+```c
+void Task0(void){ 
+  Count0 = 0; 
+  while(1){ 
+    Count0++; 
+    Profile_Toggle0(); // toggle bit 
+  } 
+} 
+void Task1(void){ 
+  Count1 = 0; 
+  while(1){ 
+    Count1++; 
+    Profile_Toggle1(); // toggle bit 
+  } 
+} 
+void Task2(void){ 
+  Count2 = 0; 
+  while(1){ 
+    Count2++; 
+    Profile_Toggle2(); // toggle bit 
+  } 
+} 
+#define THREADFREQ 500 // frequency in Hz 
+int main(void){ // testmain2 
+  OS_Init(); // initialize, disable interrupts 
+  Profile_Init(); // enable digital I/O on profile pins 
+  OS_AddThreads(&Task0, &Task1, &Task2); 
+  OS_Launch(BSP_Clock_GetFreq()/THREADFREQ); // interrupts enabled in here 
+  return 0; // this never executes 
+}
+```
+
+*Program 2.10. Example user code with three threads.*
+
+SysTick will be used to perform the preemptive thread switching. We will set the SysTick to the lowest level so we know it will only suspend foreground threads (Program 2.11).
+
+```c
+void OS_Init(void){ 
+  DisableInterrupts(); 
+  BSP_Clock_InitFastest();// set processor clock to fastest speed 
+}
+```
+
+*Program 2.11. RTOS initialization.*
+
+--
+--
+
+
+###2.3.4. Launching the OS
+
+[Launching the OS](https://youtu.be/wyAETMk-zlg)
+
+To start the RTOS, we write code that arms the SysTick interrupts and unloads the stack as if it were returning from an interrupt (Program 2.12). The units of `theTimeSlice`` are in bus cycles. The bus cycle time on the TM4C123 is 12.5ns, and on the MSP432 the bus cycle time is 20.83ns.
+```c
+void OS_Launch(uint32_t theTimeSlice){
+  STCTRL = 0;                  // disable SysTick during setup
+  STCURRENT = 0;               // any write to current clears it
+  SYSPRI3 =(SYSPRI3&0x00FFFFFF)|0xE0000000; // priority 7
+  STRELOAD = theTimeSlice - 1; // reload value
+  STCTRL = 0x00000007;         // enable, core clock and interrupt arm
+  StartOS();                   // start on the first task
+}
+```
+*Program 2.12. RTOS launch.*
+
+The `StartOS` is written in assembly (Program 2.13). In this simple implementation, the first user thread is launched by setting the stack pointer to the value of the first thread, then pulling all the registers off the stack explicitly. The stack is initially set up like it had been running previously, was interrupted (8 registers pushed), and then suspended (another 8 registers pushed). When launch the first thread for the first time we do not execute a return from interrupt (we just pull 16 registers from its stack). Thus, the state of the thread is initialized and is now ready to run.
+```asm
+StartOS
+    LDR     R0, =RunPt   ; currently running thread
+    LDR     R1, [R0]     ; R1 = value of RunPt
+    LDR     SP, [R1]     ; new thread SP; SP = RunPt->sp;
+    POP     {R4-R11}     ; restore regs r4-11
+    POP     {R0-R3}      ; restore regs r0-3
+    POP     {R12}
+    ADD     SP, SP, #4   ; discard LR from initial stack
+    POP     {LR}         ; start location
+    ADD     SP, SP, #4   ; discard PSR
+    CPSIE   I            ; Enable interrupts at processor level
+    BX      LR           ; start first thread
+```
+*Program 2.13. Assembly code for the thread switcher.*
+
+
+--
+--
+
+###2.3.5. Switching theads
+
+[Switching theads](https://youtu.be/PDTutyruns0)
+
+___context switch___ =  ___thread switching___
+
+The SysTick ISR, written in assembly, performs the preemptive thread switch (Program 2.14). SysTick interrupts will be triggered at a 
+fixed rate (e.g., every 2 ms in this example. Because SysTick is priority 7, it cannot preempt any background threads. This means SysTick 
+can only suspend foreground threads. 
+1. The processor automatically saves eight registers (R0-R3,R12, LR,PC and PSR) on the stack as it suspends execution of the main program and launches the ISR. 
+2. Since the thread switcher has read-modify-write operations to the SP and to `RunPt`, we need to disable interrupts to make the ISR atomic. 
+3. Here we explicitly save the remaining registers (R4-R11). Notice the 16 registers on the stack match exactly the order of the 16 registers established by the `OS_AddThreads` function. 
+4. Register R1 is loaded with `RunPt`, which points to the TCB of the thread in the process of being suspended. 
+5. By storing the actual SP into the sp field of the TCB, we have finished suspending the thread. To repeat, to suspend a thread we push all its registers on its stack and save its stack pointer in its TCB. 
+6. To implement round robin, we simply choose the next thread in the circular linked list and update `RunPt` with the new value. The #4 is used because the next field is the second entry in the TCB. We will change this step later to implement sleeping, blocking, and priority scheduling. 
+7. The first step of launching the new thread is to establish its stack pointer. 
+8. We explicitly pull eight registers from the stack. 
+9. We enable interrupts so the new thread runs with interrupts enabled. 
+10. The LR contains 0xFFFFFFF9 because a main program using MSP was suspended by SysTick. The BX LR instruction will automatically pull the remaining eight registers from the stack, and now the processor will be running the new thread.
+
+```asm
+SysTick_Handler                ; 1) Saves R0-R3,R12,LR,PC,PSR
+    CPSID   I                  ; 2) Prevent interrupt during switch
+    PUSH    {R4-R11}           ; 3) Save remaining regs r4-11
+    LDR     R0, =RunPt         ; 4) R0=pointer to RunPt, old thread
+    LDR     R1, [R0]           ;    R1 = RunPt
+    STR     SP, [R1]           ; 5) Save SP into TCB
+    LDR     R1, [R1,#4]        ; 6) R1 = RunPt->next
+    STR     R1, [R0]           ;    RunPt = R1
+    LDR     SP, [R1]           ; 7) new thread SP; SP = RunPt->sp;
+    POP     {R4-R11}           ; 8) restore regs r4-11
+    CPSIE   I                  ; 9) tasks run with interrupts enabled
+    BX      LR                 ; 10) restore R0-R3,R12,LR,PC,PSR
+
+```
+*Program 2.14. Assembly code for the thread switcher.*
+
+![Figure 2.16](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/f52cb62182a200c8563b92c077036fd3/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/roundRobin.gif)
+*Figure 2.16. Three threads have their TCBs in a circular linked list. “**sp**” means this field is invalid for the one thread that is actually running.*
+
+The first time a thread runs, the only registers that must be set are PC, SP, the T-bit in the PSR (T=1), and the I-bit in the PSR (I=0). For debugging purposes, we do initialize the other registers the first time each thread is run, but these other initial values do not matter. We learned this trick of setting the initial register value to the register number (e.g., R5 is initially 0x05050505) from Micrium uC/OS-II. Notice in this simple example, the first time `Task0` runs it will be executed as a result of StartOS. However, the first time `Task1` and `Task2` are run, it will be executed as a result of running the `SysTick_Handler`. In particular, the initial LR and PSR for `Task0` are set explicitly in StartOS, while the initial LR and PSR for Task1 and Task2 are defined in the initial stack set in SetInitialStack. An alternative approach to launching would have been to set the SP to the R4 field of its stack, set the LR to 0xFFFFFFF9 and jump to line 8 of the scheduler. Most commercial RTOS use this alternative approach because it makes it easier to change. But we decided to present this StartOS because we feel it is easier to understand the steps needed to launch.
+
+--
+--
+
+###2.3.6. Profiling the OS
+
+[Profiling the OS](https://youtu.be/323Y4JUbREM)
+
+You can find this simple RTOS in the starter projects as RTOS_xxx, where xxx refers to the specific microcontroller on which the example was tested. Figures 2.17 and 2.18 show profiles of this RTOS at different time scales. We can estimate the thread switch time to be about 0.8 µs, because of the gap between the last edge on one pin to the first edge on the next pin. In this case because the thread switch occurs every 2 ms, the 0.8-µs thread-switch overhead is not significant.
+
+You can find this simple RTOS in the starter projects as RTOS_xxx, where xxx refers to the specific microcontroller on which the example was tested. Figures 2.17 and 2.18 show profiles of this RTOS at different time scales. We can estimate the thread switch time to be about 0.8 µs, because of the gap between the last edge on one pin to the first edge on the next pin. In this case because the thread switch occurs every 2 ms, the 0.8-µs thread-switch overhead is not significant.
+![Figure 2.17](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/4d09e1a194908a237aed2c4e748d4377/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig02_16LogicAnalyzer.jpg)
+*Figure 2.17. The RTOS runs three threads by giving each a 2ms, measured in simulator for the TM4C123.*
+
+![Figure 2.18](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/1248e98434b8675db79b41aca00746bb/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig02_17LogicAnalyzerZoomedIn.jpg)
+*Figure 2.18. Profile showing the thread switch time is about 0.8 µs, measured in simulator for the TM4C123.*
+
+--
+--
+
+###2.3.7. Linking assembly to C
+
+[Linking assembly to C](https://youtu.be/KwdUSp-uh1s)
+
+One of the limitations of the previous scheduler is that it’s written entirely in assembly. Although fast, assembly programming is hard to extend and hard to debug. One simple way to extend this round robin scheduler is to have the assembly SysTick ISR call a C function, as shown in Program 2.15. The purpose of the C function is to run the scheduler and update the RunPt with the thread to run next. You can find this simple RTOS as `RoundRobin_xxx`, where xxx refers to the specific microcontroller on which the example was tested.
+```c
+void Scheduler(void){
+  RunPt = RunPt->next;  // Round Robin
+}
+```
+*Program 2.15. Round robin scheduler written in C.*
+
+The new SysTick ISR calls the C function in order to find the next thread to run, Program 2.16. We must save R0 and LR because these registers will not be preserved by the C function. IMPORT is an assembly pseudo-op to tell the assembler to find the address of Scheduler from the linker when all the files are being stitched together. Since this is an ISR, recall that LR contains 0xFFFFFFF9, signifying we are running an ISR. We had to save the LR before calling the function because the BL instruction uses LR to save its return address. The POP instruction restores LR to 0xFFFFFFF9. According to AAPCS, we need to push/pop an even number of registers (8-byte alignment) and functions are allowed to freely modify R0-R3, R12. For these two reasons, we also pushed and popped R0. Note that the other registers, R1,R2,R3 and R12 are of no consequence to us, so we don’t bother saving them.
+
+```c
+IMPORT Scheduler
+SysTick_Handler                ; 1) Saves R0-R3,R12,LR,PC,PSR
+    CPSID   I                  ; 2) Prevent interrupt during switch
+    PUSH    {R4-R11}           ; 3) Save remaining regs r4-11
+    LDR     R0, =RunPt         ; 4) R0=pointer to RunPt, old thread
+    LDR     R1, [R0]           ;    R1 = RunPt
+    STR     SP, [R1]           ; 5) Save SP into TCB
+;    LDR     R1, [R1,#4]        ; 6) R1 = RunPt->next
+;    STR     R1, [R0]           ;    RunPt = R1
+    PUSH    {R0,LR}
+    BL      Scheduler
+    POP     {R0,LR}
+    LDR     R1, [R0]           ; 6) R1 = RunPt, new thread
+    LDR     SP, [R1]           ; 7) new thread SP; SP = RunPt->sp;
+    POP     {R4-R11}           ; 8) restore regs r4-11
+    CPSIE   I                  ; 9) tasks run with interrupts enabled
+    BX      LR                 ; 10) restore R0-R3,R12,LR,PC,PSR
+
+```
+
+*Program 2.16. Assembly code for the thread switcher with call to the scheduler written in C.*
+
+In this implementation, we are running the C function ___Scheduler___ with interrupts disabled. On one hand this is good because all read-modify-write operations to shared globals will execute atomically, and not create critical sections. On the other hand, since interrupts are disabled, it will delay other possibly more important interrupts from being served. Running with interrupts disabled will cause time jitter for periodic threads and latency for event-response threads. In Lab 2 we will manage this problem by running all the real-time tasks inside this Scheduler function itself.
+
+--
+--
