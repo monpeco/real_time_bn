@@ -1573,3 +1573,74 @@ In this implementation, we are running the C function ___Scheduler___ with inter
 
 --
 --
+
+###2.3.8. Periodic threads
+
+[Periodic threads](https://youtu.be/ohN9lIUcKOM)
+
+A very appropriate feature of a RTOS is scheduling periodic tasks. If the number of periodic tasks is small, the OS can assign a unique periodic hardware timer for each task. Another simple solution is to run the periodic tasks in the scheduler. For example, assume the thread switch is occurring every 1 ms, and we wish to run the function `PeriodicUserTask()` every 10 ms, then we could modify the scheduler as shown in Figure 2.19 and Program 2.17. Assume the OS initialized the counter to 0. In order for this OS to run properly, the time to execute the periodic task must be very short and always return. These periodic tasks cannot spin or block.
+
+![Figure 2.19](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/f4bf72cbbc9aedd70ff31e9f3e7e023f/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig02_xx_realtimeThreads.jpg)
+Figure 2.19. Simple mechanism to implement periodic event threads is to run them in the scheduler.
+```c
+uint32_t Counter;
+#define NUM 10
+void (*PeriodicTask1)(void);  // pointer to user function
+void Scheduler(void){
+  if((++Counter) == NUM){
+    (*PeriodicTask1)();       // runs every NUM ms
+    Counter = 0;
+  }
+  RunPt = RunPt->next;         // Round Robin scheduler
+}
+```
+
+*Program 2.17. Round robin scheduler with periodic tasks.*
+
+This approach has very little time jitter because SysTick interrupts occur at a fixed and accurate rate. The SysTick ISR calls the Scheduler, and then the Scheduler calls the user task. The execution delay from the SysTick trigger to the running of the user task is a constant, so the time between executions of the user task is fixed and exactly equal to the SysTick trigger period.
+
+If there are multiple real-time periodic tasks to run, then you should schedule at most one of them during each SysTick ISR execution. This way the time to execute one periodic task will not affect the time jitter of the other periodic tasks. For example, assume the thread switch is occurring every 1 ms, and we wish to run `PeriodicUserTask1()` every 10 ms, and run `PeriodicUserTask2()` every 25 ms. In this simple approach, the period of each task must be a multiple of the thread switch period. I.e., the periodic tasks must be multiples of 1 ms. First, we find the least common multiple of 10 and 25, which is 50. We let the counter run from 0 to 49, and schedule the two tasks at the desired rates, but at non-overlapping times as illustrated in Program 2.18.
+```c
+uint32_t Counter;
+void Scheduler(void){
+  Counter = (Counter+1)%50; // 0 to 49
+  if((Counter%10) == 1){ // 1, 11, 21, 31 and 41
+    PeriodUserTask1();
+  }
+  if((Counter%25) == 0){ // 0 and 25
+    PeriodUserTask2();
+  }
+  RunPt = RunPt->next; // Round Robin scheduler
+}
+```
+*Program 2.18. Round robin scheduler with two periodic tasks.*
+
+Consider a more difficult example, where we wish to run Task0 every 1 ms, Task1 every 1.5 ms and Task2 every 2 ms. In order to create non-overlapping executions, we will need a thread switch period faster than 1 kHz, so we don’t have to run Task0 every interrupt. So, let’s try working it out for 2 kHz, or 0.5 ms. The common multiple of 1, 1.5 and 2 is 6 ms. So we use a counter from 0 to 11, and try to schedule the three tasks. Start with Task0 running every other, and then try to schedule Task1 running every third. There is a conflict at 4 and 10.
+```
+    Task0: runs every 1 ms at counter values 0, 2, 4, 6, 8, and 10
+    Task1: runs every 1.5 ms at counter values 1, 4, 7, and 10
+```
+So, let's try running faster at 4 kHz or every 0.25 ms. The common multiple is still 6 ms, but now the counter goes from 0 to 23. We can find a solution
+```
+    Task0: runs every 1 ms at counter values 0, 4, 8, 12, 16, and 20
+    Task1: runs every 1.5 ms at counter values 1, 7, 13, and 19
+    Task2: runs every 2 ms at counter values 2, 10, and 18
+```
+In order this system to operate, the maximum time to execute each task must be very short compared to the period used to switch threads.
+
+--
+--
+
+###2.4.1. Introduction to semaphores
+
+[](https://youtu.be/xL6clN8ymHs)
+
+
+
+
+
+
+
+
+
+
