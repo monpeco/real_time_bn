@@ -1244,21 +1244,95 @@ jitter will be the maximum time running with interrupts disabled.
 [The Game](https://youtu.be/kRvRXyGIRKg)
 
 
+--
+--
+
+###2.3.1. Two types of threads
+
+[Two types of threads](https://youtu.be/OInuxwPg37g)
 
 
+A fundamental concept in Operating Systems is the notion of an execution context referred to as a ___thread___. We introduced threads and their components in section 2.1.2, we will now look at the types of threads and how they are treated differently in the OS.
+
+We define two types of threads in our simple OS. ___Event___ threads are attached to hardware and should execute changes in hardware status. Examples include periodic threads that should be executed at a fixed rate (like the microphone, accelerometer and light measurements in Lab 1), input threads that should be executed when new data are available at the input device (like the operator pushed a button), and output threads that should be executed when the output device is idle and new data are available for output. They are typically defined as void-void functions. The time to execute an event thread should be short and bounded. In other words, event threads must execute and return. The time to execute an event thread must always be less than a small value (e.g., 10µs). In an embedded system without an OS, event threads are simply the interrupt service routines (ISRs). However, with a RTOS, we will have the OS manage the processor and I/O, and therefore the OS will manage the ISRs. The user will write the software executed as an event thread, but the OS will manage the ISR and call the appropriate event thread. Communication between threads will be managed by the OS. For example, threads could use a FIFO to pass data.
+
+```c
+void inputThread(void){
+  data = ReadInput(); 
+  Send(data);
+}
+void outputThread(void){
+  data = Recv(); 
+  WriteOutput(data);
+}
+void periodicThread(void){
+  PerformTask();
+}
+```
+
+The second type of thread is a ___main___ thread. Without an OS, embedded systems typically have one main program that is executed on start up. This main initializes the system and defines the high level behavior of the system. In an OS however, we will have multiple main threads. Main threads execute like main programs that never return. These threads execute an initialization once and then repeatedly execute a sequence of steps within a while loop. Here in chapter 2, we will specify all the main threads at initialization and these threads will exist indefinitely. However, in later chapters we will allow main threads to be created during execution, and we will allow main threads to be destroyed dynamically.
+
+```c
+void mainThread(void){
+  Init(); 
+  while(1){
+    Body();
+  }
+}
+```
+
+Table 2.5 compares event and main threads. For now, main threads will run indefinitely, but later in the class we will allow main threads to be terminated if their task is complete. Also, in Chapter 2 we will create all the main threads statically at the time the OS launches. In subsequent chapters we will allow the user to create main threads dynamically at run time.
+
+| Event Thread	| Main Thread| 
+|---------------|------------|
+| Triggered by hardware	| Created when OS launches| 
+| Must return	| Runs indefinitely| 
+| Short execution time	| Unbounded execution time| 
+| No waiting	| Allowed to wait| 
+| Finite number of loops (definite)	| Indefinite or infinite loops| 
+
+*Table 2.5. Comparison of event and main threads.*
 
 
+--
+--
+
+###2.3.2. Thread Control Block (TCB)
+
+[ Thread Control Block ](https://youtu.be/syadcFUSwzA)
 
 
+Figure 2.14 shows three threads. Each thread has a thread control block (TCB) encapsulating the state of the thread. For now, a thread’s TCB we will only maintain a link to its stack and a link to the TCB of the next thread. The ___RunPt___ points to the TCB of the thread that is currently running. The next field is a pointer chaining all three TCBs into a circular linked list. Each TCB has an sp field. If the thread is running it is using the real SP for its stack pointer. However, the other threads have their stack pointers saved in this field. Other fields that define a thread’s state such as, status, Id, sleeping, age, and priority will be added later. However, for your first RTOS, the sp and next fields will be sufficient. The scheduler traverses the linked list of TCBs to find the next thread to run.  In this example there are three threads in a circular linked list. Each thread runs for a fixed amount of time, and a periodic interrupt suspends the running thread and switches RunPt to the next thread in the circular list. The scheduler then launches the next thread.
 
+[Figure 2.14](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/4db4300fcac73fbdb14309f25948d462/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig02_16_RoundRobinThreads.jpg)
+Figure 2.14. Three threads have their TCBs in a circular linked list. 
 
+The ___Thread Control Block (TCB)___ will store the information private to each thread. There will be a TCB structure and a stack for each thread. While a thread is running, it uses the actual Cortex M hardware registers (Figure 2.15). Program 2.8 shows a TCB structure with the necessary components for three threads: 
+  1. A pointer so it can be chained into a linked list
+  2. The value of its stack pointer
 
+In addition to these necessary components, the TCB might also contain:
+  3. Status, showing resources that this thread has or wants 
+  4. A sleep counter used to implement sleep mode
+  5. Thread number, type, or name
+  6. Age, or how long this thread has been active
+  7. Priority (not used in a round robin scheduler)
 
+```c
+#define NUMTHREADS 3  // maximum number of threads
+#define STACKSIZE 100 // number of 32-bit words in stack
+struct tcb{
+  int32_t *sp;      // pointer to stack, valid for threads not running
+  struct tcb *next; // linked-list pointer
+};
+typedef struct tcb tcbType;
+tcbType tcbs[NUMTHREADS];
+tcbType *RunPt;
+int32_t Stacks[NUMTHREADS][STACKSIZE];
+```
+*Program 2.8. TCBs for up to 3 threads, each stack is 400 bytes.*
 
-
-
-
-
-
+![Figure 2.15](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/87b50a40b12c1d5d8549816c77d05e48/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig02_15_ThreadSwitch.jpg)
+*Figure 2.15. The running thread uses the actual registers, while the other threads have their register values saved on the stack. For the running thread the sp field is not valid, while the sp field on other threads points to the top of its stack.*
 
 
