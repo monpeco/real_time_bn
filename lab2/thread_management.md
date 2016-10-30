@@ -1635,9 +1635,499 @@ In order this system to operate, the maximum time to execute each task must be v
 
 [](https://youtu.be/xL6clN8ymHs)
 
+Remember that when an embedded system employs a real-time operating system to manage threads, typically this system combines multiple hardware/software objects to solve one dedicated problem. In other words, the components of an embedded system are tightly coupled. For example, in lab all threads together implement a personal fitness device. The fact that an embedded system has many components that combine to solve a single problem leads to the criteria that threads must have mechanisms to interact with each other. The fact that an embedded system may be deployed in safety-critical environments also implies that these interactions be effective and reliable.
+
+We will use semaphores to implement synchronization, sharing and communication between threads. A semaphore is a counter with three functions: `OS_InitSemaphore`, `OS_Wait`, and `OS_Signal`. Initialization occurs once at the start, but wait and signal are called at run time to provide synchronization between threads. Other names for wait are pend and P (derived from the Dutch word proberen, which means to test). Other names for signal are post and V (derived from the Dutch word verhogen, which means to increment).
+
+The concept of a semaphore was originally conceived by the Dutch computer scientist Edsger Dijkstra in 1965. He received many awards including the 1972 Turing Award. He was the Schlumberger Centennial Chair of Computer Sciences at The University of Texas at Austin from 1984 until 2000. Interestingly he was one of the early critics of the GOTO instruction in high-level languages. Partly due to his passion, structured programming languages like C, C++ and Java have almost completely replaced non-structured languages like BASIC, COBOL, and FORTRAN.
+
+In this class we will develop three implementations of semaphores, but we will begin with the simplest implementation called “spin-lock” (Figure 2.20). Each semaphore has a counter. If the thread calls `OS_Wait` with the counter equal to zero it will “spin” (do nothing) until the counter goes above zero (Program 2.20). Once the counter is greater than zero, the counter is decremented, and the wait function returns. In this simple implementation, the `OS_Signal` just increments the counter. In the context of the previous round robin scheduler, a thread that is “spinning” will perform no useful work, but eventually will be suspended by the SysTick handler, and then other threads will execute. It is important to allow interrupts to occur while the thread is spinning so that the software does not hang. The read-modify-write operations on the counter, s, is a critical section. So the read-modify-write sequence must be made atomic, because the scheduler might switch threads in between any two instructions that execute with the interrupts enabled. Program 2.20 shows this simple implementation the semaphore functions, which we will use in Lab 2.
+
+![Figure 2.20](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/17bf336c865415b69d439e2ac39dd48a/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig02_19SemaphoreFlowChart.jpg)
+*Figure 2.20. Flowcharts of a spinlock counting semaphore.*
+
+In the C implementation of spinlock semaphores, the tricky part is to guarantee all read-modify-write sequences are atomic. The while-loop reads the counter, which is always run with interrupts disabled. If the counter is greater than 0, it will decrement and store, such that the entire read-modify-write sequence is run with interrupts disabled. The while-loop must spend some time with interrupts enabled to allow other threads an opportunity to run, and hence these other threads have an opportunity to call signal.
+```c
+void OS_Wait(int32_t *s){
+  DisableInterrupts();
+  while((*s) == 0){
+    EnableInterrupts(); // interrupts can occur here
+    DisableInterrupts();
+  }
+  (*s) = (*s) - 1;
+  EnableInterrupts();
+} 
+void OS_Signal(int32_t *s){
+  DisableInterrupts();
+  (*s) = (*s) + 1;
+  EnableInterrupts();
+}
+```
+*Program 2.20. A spinlock counting semaphore.*
+
+####CHECKPOINT 2.12
+
+What happens if we remove just the EnableInterrupts DisableInterrupts operations from while-loop of the spinlock OS_Wait?
+
+The function OS_Wait will crash because it is spinning with interrupts disabled.
+
+####CHECKPOINT 2.13
+
+What happens if we remove all the DisableInterrupts EnableInterrupts operations from the spinlock OS_Wait?
+
+The function OS_Wait has a critical section around the read-modify-write access to the semaphore. If we remove the mutual exclusion, multiple threads could pass.
+
+Spinlock semaphores are inefficient, wasting processor time when they spin on a counter with a value of zero. In the subsequent chapters we will develop more complicated schemes to recover this lost time.
+
+--
+--
+
+###2.4.2. Applications of semaphores
+
+[Applications of semaphores](https://youtu.be/eCUkaqVwTnk)
+
+
+When we use a semaphore, we usually can assign a meaning or significance to the counter value. In the first application we could use a semaphore as a lock so only one thread at a time has access to a shared object. Another name for this semaphore is ___mutex___, because it provides ___mutual exclusion___. If the semaphore is 1 it means the object is free. If the semaphore is 0 it means the object is busy being used by another thread. For this application the initial value of the semaphore (x) is 1, because the object is initially free. A thread calls `OS_Wait` to capture the object (decrement counter) and that same thread calls `OS_Signal` to release the object (increment counter).
+```c
+void Thread1(void){
+  Init1();
+  while(1){
+    OS_Wait(&x); 
+    // exclusive access to object
+    OS_Signal(&x);
+    // other processing
+  }
+}
+void Thread2(void){
+  Init2();
+  while(1){
+    OS_Wait(&x); 
+    // exclusive access to object
+    OS_Signal(&x);
+    // other processing
+  }
+}
+```
+
+In second application we could use a semaphore for ___synchronization___. One example of this synchronization is a condition variable. If the semaphore is 0 it means an event has not yet happened, or things are not yet ok. If the semaphore is 1 it means the event has occurred and things are ok. For this application the initial value of the semaphore is 0, because the event is yet to occur. A thread calls `OS_Wait` to wait for the event (decrement counter) and another thread calls `OS_Signal` to signal that the event has occurred (increment counter). Let y be a semaphore with initial value of 0.
+```c
+void Thread1(void){
+  Init1();
+  OS_Wait(&y); // wait for event
+      // event to occur
+  while(1){
+      // other processing
+  }
+}
+void Thread2(void){
+  Init2();
+// this thread knows the event has occurred
+  OS_Signal(&y); // signal event 
+  while(1){
+    // other processing
+  }
+}
+```
+
+--
+--
+
+###2.5.1. Resource sharing, nonreentrant code or mutual exclusion
+
+[Thread Synchronization](https://youtu.be/qQO5-cfsgso)
+
+
+This section can be used in two ways. First it provides a short introduction to the kinds of problems that can be solved using semaphores. In other words, if you have a problem similar to one of these examples, then you should consider a thread scheduler with semaphores as one possible implementation. Second, this section provides the basic approach to solving these particular problems. An important design step when using semaphores is to ascribe a meaning to each semaphore and a meaning to each value that semaphore can have.
+
+The objective of this example is to share a common resource on a one at a time basis, also refered to as “mutually exclusive” fashion. The critical section (or vulnerable window) of nonreentrant software is that region that should only be executed by one thread at a time. As an example, the common resource we will consider is a display device (LCD). Mutual exclusion in this context means that once a thread has begun executing a set of LCD functions, then no other thread is allowed to use the LCD. See Program 2.21. In other words, whichever thread starts to output to the LCD first will be allowed to finish outputting. The thread that arrives second will simply wait for the first to finish. Both will be allowed to output to the LCD, however, they will do so on a one at a time basis. The mechanism to create mutual exclusion is to initialize the semaphore to 1, execute `OS_Wait` at the start of the critical section, and then execute `OS_Signal` at the end of the critical section. In this way, the information sent to one part of the LCD is not mixed with information sent to another part of the LCD.
+
+```c
+void Task2(void){ 
+  Init2();
+  while(1){
+    Unrelated2();
+    OS_Wait(&LCDmutex);
+    BSP_LCD_PlotPoint(Data, COLOR);
+    BSP_LCD_PlotIncrement();
+    OS_Signal(&LCDmutex);
+  }
+}
+```
+
+```c
+void Task5(void){ 
+  Init5();
+  while(1){
+    Unrelated5();
+    OS_Wait(&LCDmutex);
+    BSP_LCD_SetCursor(5, 0);
+    BSP_LCD_OutUDec4(Time/10,COLOR);
+    BSP_LCD_SetCursor(5, 1); 
+    BSP_LCD_OutUDec4(Steps,COLOR);
+    BSP_LCD_SetCursor(16, 0);
+    BSP_LCD_OutUFix2_1(TempData,COLOR);
+    BSP_LCD_SetCursor(16, 1);
+    BSP_LCD_OutUDec4(SoundRMS,COLOR);
+     OS_Signal(&LCDmutex); 
+  }
+}
+```
+
+*Program 2.21. Semaphores used to implement mutual exclusion, simplified from usage in Lab 2.*
+
+Initially, the semaphore is 1. If LCDmutex is 1, it means the LCD is free. If LCDmutex is 0, it means the LCD is busy and no thread is waiting. In this chapter, a thread that calls `OS_Wait` on a semaphore already 0 will wait until the semaphore becomes greater than 0. For a spinlock semaphore in this application, the possible values are only 0 (busy) or 1 (free). A semaphore that can only be 0 or 1 is called a ____binary semaphore____.
+
+
+--
+--
+
+###2.5.2. Thread communication between two threads using a mailbox
+
+[Thread communication](https://youtu.be/9Ex6y-lcvDw)
+
+The objective of this example is to communicate between two main threads using a mailbox. In this first implementation both the producer and consumer are main threads, which are scheduled by the round robin thread scheduler (Program 2.22). The producer first generates data, and then it calls SendMail(). Consumer first calls `RecvMail()`, and then it processes the data. `Mail` is a shared global variable that is written by a producer thread and read by a consumer thread. In this way, data flows from the producer to the consumer. The `Send` semaphore allows the producer to tell the consumer that new mail is available. The `Ack` semaphore is a mechanism for the consumer to tell the producer, the mail was received. If `Send` is 0, it means the shared global does not have valid data. If `Send` is 1, it means the shared global does have valid data. If `Ack` is 0, it means the consumer has not yet read the global. If `Ack` is 1, it means the consumer has read the global. The sequence of operation depends on which thread arrives first. Initially, semaphores `Send` and `Ack` are both 0. Consider the case where the producer executes first.
+
+    Execution                Mail    Send Ack  Comments
+    Initially                none    0    0
+    Producer sets Mail       valid   0    0    Producer gets here first
+    Producer signals Send    valid   1    0
+    Producer waits on Ack    valid   1    0    Producer spins because Ack =0
+    Consumer waits on Send   valid   0    0    Returns immediately because Send was 1
+    Consumer reads Mail      none    0    0    Reading once means Mail not valid
+    Consumer signals Ack     none    0    1    Consumer continues to execute
+    Producer finishes wait   none    0    0    Producer continues to execute
+
+Consider the case where the consumer executes first.
+
+    Execution                Mail    Send Ack  Comments
+    Initially                none    0    0
+    Consumer waits on send   none    0    0    Consumer spins because Send =0
+    Producer sets Mail       valid   0    0    Producer gets here second
+    Producer signals Send    valid   1    0
+    Producer waits on Ack    valid   1    0    Producer spins because Ack =0
+    Consumer finishes wait   valid   0    0    Consumer continues to execute
+    Consumer reads Mail      none    0    0    Reading once means Mail not valid
+    Consumer signals Ack     none    0    1    Consumer continues to execute
+    Producer finishes wait   none    0    0    Producer continues to execute
+
+```c
+uint32_t Mail;  // shared data
+int32_t Send=0; // semaphore
+int32_t Ack=0;  // semaphore
+```
+
+```c
+void SendMail(uint32_t data){
+  Mail = data;
+  OS_Signal(&Send);
+  OS_Wait(&Ack);
+}
+void Producer(void){ 
+  Init1();
+  while(1){ uint32_t int myData;
+    myData = MakeData();
+    SendMail(myData);
+    Unrelated1();
+  }
+}
+```
+
+```c
+uint32_t RecvMail(void){ 
+uint32_t theData;
+  OS_Wait(&Send);
+  theData = Mail; // read mail
+  OS_Signal(&Ack);
+  return theData;
+} 
+void Consumer(void){ 
+  Init2();
+  while(1){ uint32_t thisData;
+    thisData = RecvMail();
+    Unrelated2();
+  }
+}
+```
+
+*Program 2.22. Semaphores used to implement a mailbox. Both Producer and Consumer are main threads.*
+
+Remember that only main threads can call `OS_Wait`, so the above implementation works only if both the producer and consumer are main threads. If producer is an event thread, it cannot call `OS_Wait`. For this scenario, we must remove the `Ack` semaphore and only use the `Send` semaphore (Program 2.24). Initially, the `Send` semaphore is 0. If `Send` is already 1 at the beginning of the producer, it means there is already unread data in the mailbox. In this situation, data will be lost. In this implementation, the error count, `Lost`, is incremented every time the producer calls `SendMail()` whenever the mailbox is already full.
 
 
 
+```c
+uint32_t Lost=0;
+void SendMail(uint32_t data){
+  Mail = data;
+  if(Send){
+    Lost++;
+  }else{
+    OS_Signal(&Send);
+  }
+}
+void Producer(void){ 
+  Init1();
+  while(1){ uint32_t int myData;
+    myData = MakeData();
+    SendMail(myData);
+    Unrelated1();
+  }
+}
+```
+
+```c
+uint32_t RecvMail(void){ 
+  OS_Wait(&Send);
+  return Mail; // read mail
+}
+
+
+void Consumer(void){ 
+  Init2();
+  while(1){ uint32_t thisData;
+    thisData = RecvMail();
+    Unrelated2();
+  }
+}
+```
+*Program 2.24. Semaphores used to implement a mailbox. Producer is an event thread and Consumer is a main thread.*
+
+
+####CHECKPOINT 2.14
+
+There are many possible ways to handle the case where data is lost in Program 2.24. The code as written will destroy the old data, and the consumer will skip processing the old lost data. Modify Program 2.24 such that the system destroys the new data, and the consumer will skip processing the new data.
+```c
+Notice this function discards the new data on error
+void SendMail(uint32_t int data){
+  if(Send){
+    Lost++; // discard new data
+  }else{
+    Mail = data;
+    OS_Signal(&Send);
+  }
+}
+```
+
+A mailbox forces the producer and consumer to execute lock-step {producer, consumer, producer, consumer,…}. It also suffers from the potential to lose data. Both of these limitations will motivate the ___first in first out (FIFO) queue___ presented in the next chapter.
+
+--
+--
+
+###About Lab 2
+
+[Introduction to Lab 2](https://youtu.be/qKLcdf3tcDQ)
+
+###OBJECTIVES
+* Develop debugging skills using the Keil debugger and TExaS logic analyzer
+* Understand the two existing round robin preemptive schedulers presented in Chapter 2
+* Appreciate the distinction between real-time and non-real time tasks
+* Develop a scheduler that runs two periodic event threads and four main threads
+* Implement spin-lock semaphores and a mailbox
+
+###OVERVIEW
+We want you to understand how an RTOS works and demonstrate your understanding by completing a set of activities. The Lab 2 starter project using the LaunchPad and the Educational BoosterPack MKII (BOOSTXL-EDUMKII) is again a fitness device. However, the starter project will not execute until you implement a very simple RTOS. The user code inputs from the microphone, accelerometer, temperature sensor and switches. It performs some simple measurements and calculations of steps, sound intensity, and temperature. It outputs data to the LCD and it generates simple beeping sounds. Figure Lab2.1 shows the data flow graph of Lab 2. Your assignment is to first understand the concepts of the chapter in general and the projects RTOS_xxx and RoundRobin_xxx in specific. Your RTOS will run two periodic threads and four main threads. Sections 2.3.1 – 2.3.6 develops an RTOS that runs three main threads and your system must run four main threads. Section 2.3.7 explains how to extend the Scheduler() function so that it also runs periodic tasks. Section 2.4.2 explains how to implement spinlock semaphores.
+
+![Figure 2.1](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/d026608aab917085868883d1f4280d84/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Lab2.1dataFlow.jpg)
+*Figure 2.1. Data flow graph of Lab 2.*
+
+This simple fitness device has six tasks: two periodic and four main threads. Since we have two periodic threads to schedule, we could have used interrupts on two hardware timers to run the real-time periodic threads. However, Lab 2 will run with just SysTick interrupts to run two the periodic threads and to switch between the four main threads. These are the six tasks:
+
+However, Lab 2 will run with just SysTick interrupts to run two the periodic threads and to switch between the four main threads. These are the six tasks:
+
+* Task0: event thread samples microphone input at 1000 Hz
+* Task1: event thread samples acceleration input at 10 Hz
+* Task2: main thread detecting steps and plotting at on LCD, runs about 10 Hz
+* Task3: main thread inputs from switches, outputs to buzzer
+* Task4: main thread measures temperature, runs about 1 Hz
+* Task5: main thread output numerical data to LCD, runs about 1 Hz
+
+Your RTOS manages these six tasks. We will use the same metrics as described as used in Lab 1, except jitter and error are only relevant for the two real-time event tasks:
+
+* Minj = minimum ΔTj for Task j, j=0 to 5
+* Maxj = maximum ΔTj for Task j, j=0 to 5
+* Jitterj = Maxj - Minj for Task j, j=0 to 1
+* Avej = Average ΔTj for Task j, j=0 to 5
+* Errj = 100*( Avej - Δtj)/ Δtj for Task j, j=0 to 1
+
+In addition to the above quantitative measures, you will be able to visualize the execution profile of the system using a logic analyzer. Each task in Lab 2 toggles both the virtual logic analyzer and a real logic analyzer when it starts. For example, Task0 calls `TExaS_Task0()`. The first parameter to the function `TExaS_Init()` will be GRADER or LOGICANALYZER. Just like Lab 1, calling `TExaS_Task0()` in grader mode performs the lab grading. However in logic analyzer mode, these calls implement the virtual logic analyzer and can be viewed with ___TExaSdisplay___. The TExaS logic analyzer should be used during debugging.
+
+
+--
+--
+###Debugging Lab 2
+
+####SPECIFICATIONS
+
+A real-time system is one that guarantees the jitters are less than a desired threshold, and the averages are close to desired values. Now that we are using interrupts we expect the jitter for the two event tasks to be quite low. For the four main threads, you will be graded only on minimum, maximum, and average time between execution of tasks. Your assignment is implement the OS functions in OS.c and write the SysTick interrupt service routine in osasm.s. We do not expect you to edit the user code in Lab2.c, the board support package in BSP.c, or the interface specifications in profile.h, Texas.h, BSP.h, or OS.h. More specifically, we are asking you to develop and debug a real-time operating system, such that
+
+* Task0: jitter between executions should be less than or equal to 15us
+* Task1: jitter between executions should be less than or equal to 30us
+* Task2: average time between executions should be 100 ms within 5%
+* Task3: average time between executions should be less than 50 ms
+* Task4: average time between executions should be less than 1.2 s
+* Task5: average time between executions should be 1.0 s within 5%
+
+![Figure 2.2](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/8b196f6e2907988092fc31fe87130085/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Lab2_1.jpg)
+Figure 2.2. TExaS window showing a solution to Lab 2.
+
+###APPROACH
+
+Before you begin editing, downloading and debugging, we encourage you to first open up and run a couple of projects. The first project we recommend is ___RTOS_xxx___. This project implements a very simple real-time operating system as described in Sections 2.3.1 – 2.3.5. Make sure you understand function pointers and each line of the SysTick ISR.
+
+[repeat of RTOS video in 2.3.6](https://youtu.be/323Y4JUbREM)
+
+--
+
+###Running round robin
+
+Next, we encourage you should open up the project RoundRobin_xxx. This project extends the simple real time operating system so the `scheduler` is implemented in C as described in Section 2.3.6. Make sure you understand how the assembly code calls a C function. You will need to understand how the assembly code accesses the shared global, RunPt. Remember this approach will only work if the time to execute `Scheduler()` is very short compared to the time between SysTick interrupt triggers.
+
+[Running round robin](https://youtu.be/QGdlkiuc0Cw)
+
+--
+
+###Running Lab 2 with the TExaS Logic Analyzer
+
+[Running Lab 2 with the TExaS Logic Analyzer](https://youtu.be/76jcGUhfRTs)
+
+
+--
+
+###Running Lab2 with a real logic analyzer
+
+[Running Lab2 with a real logic analyzer] (https://youtu.be/Q5Y-O8YFp4A)
+
+Third, we encourage you should open up the project ___Lab2_xxx___ and fully understand the system from the user perspective by reading through Lab2.c. 
+Lab2 requires both the ___LaunchPad___ and the ___Educational BoosterPack MKII___. Next, read through ___OS.c___ and OS.h to learn how your operating 
+system will support the user system. Since this is a class on operating systems, and not personal fitness devices, we do not envision you modifying 
+Lab2.c at all. Rather you are asked to implement the RTOS by writing code in the ___osasm.s___ and ___OS.c___ files.
+
+To activate the logic analyzer, initialize TExaS with `TExaS_Init(LOGICANALYZER,1000)`; Do not worry about the number 1000; you will fill in a valid 
+number once you are done with ___Lab 2___.
+
+To activate the grader, initialize TExaS with `TExaS_Init(GRADER,1000)`; When you run the starter code in grading mode, you should see this output on 
+___TExaSdisplay___. Note the numbers on the MSP432 running at 48 MHz will be slightly different than the numbers generated by the TM4C123 running at 80 MHz.
+
+1. ___Step 1)___ Implement the three spin lock semaphore functions as defined in ___OS.c___ and ___OS.h___. For more information on semaphores review 
+Section 2.4. Create a simple main program to test the functions.
+
+```c
+int32_t s1,s2;
+int main(void){
+  OS_InitSemaphore(&s1,0);
+  OS_InitSemaphore(&s2,1);
+  while(1){
+    OS_Wait(&s2);   //now s1=0, s2=0
+    OS_Signal(&s1); //now s1=1, s2=0
+    OS_Signal(&s2); //now s1=1, s2=1
+    OS_Signal(&s1); //now s1=2, s2=1
+    OS_Wait(&s1);   //now s1=1, s2=1
+    OS_Wait(&s1);   //now s1=0, s2=1
+  }
+}
+```
+
+2. ___Step 2)___ Implement the three mailbox functions as defined in OS.c and OS.h. Task1 is an event thread that calls `OS_MailBox_Send`. 
+Therefore, your implementation of send cannot spin. In other words if Task1 sends data to the mailbox and the mailbox is already full 
+that data will be lost. Create a simple main program to test the functions.
+
+```c
+uint32_t Out;
+int main(void){ uint32_t in=0;
+  OS_MailBox_Init);
+  while(1){
+    OS_MailBox_Send(in); 
+    Out = OS_MailBox_Recv();
+    in++;
+  }
+}
+```
+
+3. Step 3) The minimal set of functions you need to write to get the system running is
+  * `SysTick_Handler` (without calling the C function and without running periodic threads)
+  * `StartOS` 
+  * `OS_Init`
+  * `OS_AddThreads` (with just 3 threads for now)
+  * `OS_Launch` 
+
+
+Use this minimum OS to run ___Task3___ ___Task4___ and ___Task5___. In other words, for now we will not run Task0, Task1, and Task 2. To get it to compile you 
+will have to change the prototype of `OS_AddThreads` to match the implementation in OS.c and the call in `main()`. In other words, this minimal OS 
+runs three main threads and your Lab 2 will eventually run four main threads. Task5 will stall in `OS_Wait` because it has no data. However 
+___Task3___ should respond to button pushes and ___Task4___ should measure temperature. You should hear the buzzer when you press a switch. You should 
+be able to see these three tasks running on the TExaS logic analyzer, and you should be able to see global variables `PlotState` change with 
+buttons, and you should notice that `TemperatureData` is set by Task4.
+
+![Figure 2.3](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/2afa7ae7dc0f2653b1f39cbcac3bedfb/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Lab2_2.jpg)
+*Figure 2.3. TExaS window showing a step 3 output. Notice only Tasks 3 and 4 will run.*
+
+
+![Figure 2.4](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/601e8bc777d7b0bdb2d8b241b3718ab5/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Lab2_3.jpg)
+*Figure 2.4. TExaS logic analyzer trace for a step 3 output. Notice only Tasks 3 and 4 will run. Task5 is running but it is stuck in OS_Wait.*
+
+Step 4) Modify the system so the OS takes and runs four main threads and use it to run Task2 Task3 Task4 and Task5. Modify the SysTick ISR 
+so it calls a C function and implement the round robin scheduler in C. You will add periodic threads in the next step. The behavior of 
+Task3 Task4 and Task3 will be similar to step 3. In addition, Task2 will stall in the OS_Wait inside of OS_MailBox_Recv. The logic analyzer 
+trace for step 4 will be similar to Figure 2.4, except Task 3 runs a little slower because the scheduler is running tasks 2,3,4,5.
+
+![Figure 2.5](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/028a454260b881256490b41168014ba2/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Lab2_4.jpg)
+*Figure 2.5. TExaS window showing a step 4 output. Tasks 2 and 5 are running but they are stuck in OS_Wait.*
+
+5. Step 5) Modify the system to execute one of the periodic tasks. If you run ___Task0___, then ___Task5 will___ now run. If you 
+run ___Task1___, then ___Task2___ will run.
+
+![Figure 2.6](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/1e2c06c827fb3cf8702a51662e064478/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Lab2_5.jpg)
+*Figure 2.6. TExaS window showing a step 5 output. Task 2 is running but it is stuck in OS_Wait.*
+
+![Figure 2.7](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/32cecc62ad44ebee441b2c75c6421261/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Lab2_6.jpg)
+*Figure 2.7. TExaS logic analyzer trace for a step 5 output. Only one periodic task is running (just Task 0 and not Task1)*
+
+Hint: If I wished to run `Myfunction()` every 49ms, I could do this
+
+```c
+uint32_t TheTime=0;
+void Scheduler(void){ // every 1ms time slice
+  TheTime++;
+  if(TheTime == 49){
+    MyFunction(); // every 49ms
+    TheTime = 0;
+  }
+  RunPt = RunPt->next; // Round Robin
+}
+```
+
+6. Step 6) Modify the system to execute both periodic tasks.
+
+
+--
+--
+
+###Lab 2 Grader
+
+Grading your lab solution does require a ___LaunchPad___ development board. Your assignment is to implement a very simple RTOS that runs two 
+event threads and four main threads. In particular, we are asking you to modify the main program, such that
+
+* Task0 runs exactly every 1ms (jitter less than 15us)
+* Task1 runs exactly every 100ms (jitter less than 30us)
+* Task2 runs every 100ms (average within 5%)
+* Task3 runs at least every 50ms (average less than 50ms)
+* Task4 runs approximately every 1s (average less than 1.2s)
+* Task5 runs every 1.0s (average within 5%)
+
+We do expect you to execute Tasks 0 and 1 during the execution of the ___SysTick ISR___ (inside of Scheduler), so we expect the jitter on these two tasks to be small.
+
+___Step 1___ Enter the `6554` number into your ___Lab2.c___ source code as the second parameter to `TExaS_Init`. In particular, make the call 
+in `main()` look like:
+```c
+TExaS_Init(GRADER, 6554);
+```
+___Step 2___ Compile (build) your project in Keil, and download the code.
+
+___Step 3___ Start TExaSdisplay and open the COM port.
+
+___Step 4___ Start your software with the debugger or by hitting the reset on the LaunchPad. It takes about 10 seconds to collect the 
+task profile data the grader needs. The logic analyzer is not available during grading. Wait until grading is finished. Any score 
+above 70 will be considered a passing grade. If you are not satisfied with your score you are allowed multiple submissions.
 
 
 
