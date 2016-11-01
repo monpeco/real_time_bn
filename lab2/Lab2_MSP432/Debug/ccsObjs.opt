@@ -1,0 +1,1 @@
+"./BSP.obj" "./CortexM.obj" "./Lab2.obj" "./Profile.obj" "./Texas.obj" "./msp432_startup_ccs.obj" "./os.obj" "./osasm.obj" "../msp432p401r.cmd" -llibc.a 

@@ -1,0 +1,152 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000         ;/******************************************************
+                       ***********************/
+    2 00000000         ; OSasm.s: low-level OS commands, written in assembly   
+                                           */
+    3 00000000         ; Runs on LM4F120/TM4C123/MSP432
+    4 00000000         ; Lab 2 starter file
+    5 00000000         ; February 10, 2016
+    6 00000000         ;
+    7 00000000         
+    8 00000000         
+    9 00000000                 AREA             |.text|, CODE, READONLY, ALIGN=
+2
+   10 00000000                 THUMB
+   11 00000000                 REQUIRE8
+   12 00000000                 PRESERVE8
+   13 00000000         
+   14 00000000                 EXTERN           RunPt       ; currently running
+                                                             thread
+   15 00000000                 EXPORT           StartOS
+   16 00000000                 EXPORT           SysTick_Handler
+   17 00000000                 IMPORT           Scheduler
+   18 00000000         
+   19 00000000         
+   20 00000000         
+   21 00000000         SysTick_Handler                      ; 1) Saves R0-R3,R1
+                                                            2,LR,PC,PSR
+   22 00000000 B672            CPSID            I           ; 2) Prevent interr
+                                                            upt during switch
+   23 00000002 E92D 0FF0       PUSH             {R4-R11}    ; 3) Save remaining
+                                                             regs r4-11
+   24 00000006 480F            LDR              R0, =RunPt  ; 4) R0=pointer to 
+                                                            RunPt, old thread
+   25 00000008 6801            LDR              R1, [R0]    ;    R1 = RunPt
+   26 0000000A F8C1 D000       STR              SP, [R1]    ; 5) Save SP into T
+                                                            CB
+   27 0000000E         ;    LDR     R1, [R1,#4]        ; 6) R1 = RunPt->next
+   28 0000000E         ;    STR     R1, [R0]           ;    RunPt = R1
+   29 0000000E B501            PUSH             {R0,LR}
+   30 00000010 F7FF FFFE       BL               Scheduler
+   31 00000014 E8BD 4001       POP              {R0,LR}
+   32 00000018 6801            LDR              R1, [R0]    ; 6) R1 = RunPt, ne
+                                                            w thread
+   33 0000001A F8D1 D000       LDR              SP, [R1]    ; 7) new thread SP;
+                                                             SP = RunPt->sp;
+   34 0000001E E8BD 0FF0       POP              {R4-R11}    ; 8) restore regs r
+                                                            4-11
+   35 00000022 B662            CPSIE            I           ; 9) tasks run with
+                                                             interrupts enabled
+                                                            
+   36 00000024 4770            BX               LR          ; 10) restore R0-R3
+                                                            ,R12,LR,PC,PSR
+   37 00000026         
+   38 00000026         StartOS
+   39 00000026 4807            LDR              R0, =RunPt  ; currently running
+                                                             thread
+   40 00000028 6802            LDR              R2, [R0]    ; R2 = value of Run
+                                                            Pt
+   41 0000002A F8D2 D000       LDR              SP, [R2]    ; new thread SP; SP
+                                                             = RunPt->stackPoin
+
+
+
+ARM Macro Assembler    Page 2 
+
+
+                                                            ter;
+   42 0000002E E8BD 0FF0       POP              {R4-R11}    ; restore regs r4-1
+                                                            1
+   43 00000032 BC0F            POP              {R0-R3}     ; restore regs r0-3
+                                                            
+   44 00000034 F85D CB04       POP              {R12}
+   45 00000038 B001            ADD              SP,SP,#4    ; discard LR from i
+                                                            nitial stack
+   46 0000003A F85D EB04       POP              {LR}        ; start location
+   47 0000003E B001            ADD              SP,SP,#4    ; discard PSR
+   48 00000040 B662            CPSIE            I           ; Enable interrupts
+                                                             at processor level
+                                                            
+   49 00000042 4770            BX               LR          ; start first threa
+                                                            d
+   50 00000044         
+   51 00000044                 ALIGN
+   52 00000044                 END
+              00000000 
+Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M4 --apcs=interw
+ork --depend=.\objects\osasm.d -o.\objects\osasm.o -IC:\Keil_v5\MSP432ValvanoWa
+re\Lab2_MSP432\RTE -IC:\Keil_v5\ARM\PACK\ARM\CMSIS\4.5.0\CMSIS\Include -IC:\Kei
+l_v5\ARM\PACK\TexasInstruments\MSP432P4xx_DFP\2.2.1\Device\Include --predefine=
+"__EVAL SETA 1" --predefine="__UVISION_VERSION SETA 521" --predefine="_RTE_ SET
+A 1" --predefine="__MSP432P401R__ SETA 1" --list=.\listings\osasm.lst osasm.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+.text 00000000
+
+Symbol: .text
+   Definitions
+      At line 9 in file osasm.s
+   Uses
+      None
+Comment: .text unused
+StartOS 00000026
+
+Symbol: StartOS
+   Definitions
+      At line 38 in file osasm.s
+   Uses
+      At line 15 in file osasm.s
+Comment: StartOS used once
+SysTick_Handler 00000000
+
+Symbol: SysTick_Handler
+   Definitions
+      At line 21 in file osasm.s
+   Uses
+      At line 16 in file osasm.s
+Comment: SysTick_Handler used once
+3 symbols
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+External symbols
+
+RunPt 00000000
+
+Symbol: RunPt
+   Definitions
+      At line 14 in file osasm.s
+   Uses
+      At line 24 in file osasm.s
+      At line 39 in file osasm.s
+
+Scheduler 00000000
+
+Symbol: Scheduler
+   Definitions
+      At line 17 in file osasm.s
+   Uses
+      At line 30 in file osasm.s
+Comment: Scheduler used once
+2 symbols
+341 symbols in table
