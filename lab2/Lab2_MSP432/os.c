@@ -70,8 +70,8 @@ int OS_AddThreads(void(*thread0)(void),
   status = StartCritical();
   tcbs[0].next = &tcbs[1]; // 0 points to 1
   tcbs[1].next = &tcbs[2]; // 1 points to 2
-  tcbs[2].next = &tcbs[3]; // 2 points to 0
-  tcbs[3].next = &tcbs[0]; // 2 points to 0
+  tcbs[2].next = &tcbs[3]; // 2 points to 3
+  tcbs[3].next = &tcbs[0]; // 3 points to 0
 										
   SetInitialStack(0); Stacks[0][STACKSIZE-2] = (int32_t)(thread0); // PC
   SetInitialStack(1); Stacks[1][STACKSIZE-2] = (int32_t)(thread1); // PC
