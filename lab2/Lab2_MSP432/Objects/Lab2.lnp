@@ -1,0 +1,13 @@
+--cpu Cortex-M4
+".\objects\lab2.o"
+".\objects\osasm.o"
+".\objects\os.o"
+".\objects\bsp.o"
+".\objects\cortexm.o"
+".\objects\profile.o"
+".\texas.o"
+".\objects\startup_msp432p401r_uvision.o"
+".\objects\system_msp432p401r.o"
+--ro-base 0x00000000 --entry 0x00000000 --rw-base 0x20000000 --entry Reset_Handler --first __Vectors --strict --summary_stderr --info summarysizes --map --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list ".\Listings\Lab2.map" -o .\Objects\Lab2.axf
