@@ -609,7 +609,7 @@ Just like other pointers (to variables), to access what a pointer is pointing to
 In this case, to run the function we execute
 
 ```c
-TaskPt = &Callme; // TaskPt points to Callme
+*TaskPt(); // call the function it points to    
 ```
 
 As an example, let’s look at one of the features in the BSP package. The function `BSP_PeriodicTask_Init` will 
