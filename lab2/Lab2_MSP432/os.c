@@ -160,6 +160,7 @@ void Scheduler(void){ // every time slice
   // implement round robin scheduler, update RunPt
   //***YOU IMPLEMENT THIS FUNCTION*****
 	event_time0++;
+	event_time1++;
 	if(event_time0 == time_period[0]){
 		(*pt_task0)();
 		event_time0=0;
