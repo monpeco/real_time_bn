@@ -205,6 +205,106 @@ In this more complex implementation, we unchain a TCB from the ready circular li
 
 [Implementation of blocking](https://youtu.be/AU0nLB7OaAk)
 
+We will present the simple approach for implementing blocking semaphores, and we suggest you use this approach for Lab 3. Notice in Figure 3.4 that wait always decrements and signal always increments. This means the semaphore can become negative. In the example of using a semaphore to implement mutual exclusion, if free is 1, it means the resource is free. If free is 0, it means the resource is being used. If free is -1, it means one thread is using the resource and a second thread is blocked, waiting to use it. If free is -2, it means one thread is using the resource and two other threads are blocked, waiting to use it. In this simple implementation, the semaphore is a signed integer.
+
+![Figure 3.4](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/1c80d8c0536698922593e5d691d0940d/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig03_04FlowchartBlockingSemaphore.jpg)
+Figure 3.4. Flowcharts of a blocking counting semaphore.
+
+This simple implementation of blocking is appropriate for systems with less than 20 threads. In this implementation, a blocked field is added to the TCB. The type of this field is a pointer to a semaphore. The semaphore itself remains a signed integer. If blocked is null, the thread is not blocked. If the blocked field contains a semaphore pointer, it is blocked on that semaphore. The “Block this thread” operation will set the blocked field to point to the semaphore, then suspend the thread.
+
+```c
+void OS_Wait(int32_t *s){
+  DisableInterrupts();
+  (*s) = (*s) - 1;
+  if((*s) < 0){
+    RunPt->blocked = s; // reason it is blocked
+    EnableInterrupts();
+    OS_Suspend();       // run thread switcher
+  }
+  EnableInterrupts();
+}
+```
+
+The "Wakeup one thread" operation will be to search all the TCBs for first one that has a blocked field equal to the semaphore and wake it up by setting its blocked field to zero
+
+```c
+void OS_Signal(int32_t *s){
+  tcbType *pt;
+  DisableInterrupts();
+  (*s) = (*s) + 1;
+  if((*s) <= 0){
+    pt = RunPt->next;   // search for a thread blocked on this semaphore
+    while(pt->blocked != s){
+      pt = pt->next;
+    }
+    pt->blocked = 0;    // wakeup this one
+  }
+  EnableInterrupts();
+}
+```
+
+Notice in this implementation, calling the signal will not invoke a thread switch. During the thread switch, the OS searches the circular linked-list for a thread with a blocked field equal to zero (the woken up thread is a possible candidate). This simple implementation will not allow you to implement bounded waiting. You do not need to implement bounded waiting in any of the labs.
+
+```c
+void Scheduler(void){
+  RunPt = RunPt->next;    // run next thread not blocked
+  while(RunPt->blocked){  // skip if blocked
+    RunPt = RunPt->next;
+  } 
+}
+```
+
+####CHECKPOINT 3.3
+
+Assume the RTOS is running with a preemptive thread switch every 1 ms. Assume there are 8 threads in the TCB circular list, and 5 of the threads are blocked. Assume the while loop in the above Scheduler function takes 12 assembly instructions or 150ns to execute each time through the loop. What is the maximum time wasted in the scheduler looking at threads that are blocked? In other words, how much time could be saved by unchaining blocked threads from the TCB list?
+
+The worst case is you must look at all 5 blocked threads, so the while loop executes 5 times. This is a waste of 5*150 = 750ns. Since the scheduler runs every 1 ms, this waste is 0.075% of processor time.
+
+--
+--
+
+###3.2.4. Thread synchronization or rendezvous
+
+The objective of this example is to synchronize Threads 1 and 2 (Program 3.3). In other words, whichever thread gets to this part of the code first will wait for the other. Initially semaphores S1 and S2 are both 0. The two threads are said to rendezvous at the code following the signal and wait calls. The rendezvous will cause thread 1 to execute Stuff1 at the same time (concurrently) as thread 2 executes its Stuff2. There are three scenarios the semaphores may experience and their significance is listed below:
+
+   S1   S2    Meaning
+   0    0     Neither thread has arrived at the rendezvous or both have passed
+   -1   +1    Thread 2 arrived first and Thread 2 is blocked waiting for Thread 1
+   +1   -1    Thread 1 arrived first and Thread 1 is blocked waiting for Thread 2
+
+
+![Program 3.3](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/8aa1c7372c98d8dab1446013be67246f/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Program03_03.jpg) 
+*Program 3.3. Semaphores used to implement rendezvous.*
+
+--
+--
+
+###3.3.1. Producer/Consumer problem using a FIFO
+
+First in first out (FIFO) queue![](https://youtu.be/nPk_qDLw7Z0)
+*First in first out (FIFO) queue*
+
+A common scenario in operating systems is where producer generates data and a consumer consumes/processes data. To decouple the producer and consumer from having to work in lock-step a buffer is used to store the data, so the producer thread can produce when it runs and as long as there is room in the buffer and the consumer thread can process data when it runs, as long as the buffer is non-empty. A common implementation of such a buffer is a FIFO which preserves the order of data, so that the first piece of data generated in the first consumed.
+
+The first in first out circular queue (___FIFO___) is quite useful for implementing a buffered I/O interface (Figure 3.5). The function `Put` will store data in the FIFO, and the function `Get` will remove data. It operates in a first in first out manner, meaning the `Get` function will return/remove the oldest data. It can be used for both buffered input and buffered output. This order-preserving data structure temporarily saves data created by the source (producer) before it is processed by the sink (consumer). The class of FIFOs studied in this section will be statically allocated global structures. Because they are global variables, it means they will exist permanently and can be carefully shared by more than one program. The advantage of using a FIFO structure for a data flow problem is that we can decouple the producer and consumer threads. Without the FIFO we would have to produce one piece of data, then process it, produce another piece of data, then process it. With the FIFO, the producer thread can continue to produce data without having to wait for the consumer to finish processing the previous data. This decoupling can significantly improve system performance.
+
+![Figure 3.5](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/fe52a6a9e4816a25722ddf175f615df3/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig03_05_FifoFlowDiagramb.jpg)
+*Figure 3.5. The FIFO is used to buffer data between the producer and consumer. The number of data stored in the FIFO varies dynamically, where Put adds one data element and Get removes/returns one data element.*
+
+You have probably already experienced the convenience of FIFOs. For example, a FIFO is used while streaming audio from the Internet. As sound data are received from the Internet they are stored (calls `Put`) into a FIFO. When the sound board needs data it calls `Get`. As long as the FIFO never becomes full or empty, the sound is played in a continuous manner. A FIFO is also used when you ask the computer to print a file. Rather than waiting for the actual printing to occur character by character, the print command will put the data in a FIFO. Whenever the printer is free, it will get data from the FIFO. The advantage of the FIFO is it allows you to continue to use your computer while the printing occurs in the background. To implement this magic, our RTOS must be able to manage FIFOs. There are many producer/consumer applications, as we previously listed in Table 2.1, where the processes on the left are producers that create or input data, while the processes on the right are consumers which process or output data.
+
+FIFOs can be statically allocated, where the buffer size is fixed at compile time, Figure 3.6. This means the maximum number of elements that can be stored in the FIFO at any one time is determined at design time. Alternately, FIFOs can be dynamically allocated, where the OS allows the buffer to grow and shrink in size dynamically. To allow a buffer to grow and shrink, the system needs a memory manager or ___heap___. A heap allows the system to allocate, deallocate, and reallocate buffers in RAM dynamically. There are many memory managers (heaps), but the usual one available in C has these three functions. The function `malloc` creates a new buffer of a given size. The function `free` deallocates a buffer that is no longer needed. The function `realloc` allocates a new buffer, copies data from a previous buffer into the new buffer of different size, and then deallocates the previous buffer. realloc is the function needed to increase or decrease the allocated space for the FIFO statically-allocated FIFOs might result in lost data or reduced bandwidth compared to dynamic allocation.
+
+![Figure 3.6](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/2ae4f4f355ed772965e93c4fb7822dca/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/FIFOallocation.gif)
+*Figure 3.6. With static allocation, the maximum number of elements stored in the FIFO is fixed at compile time. With dynamic allocation, the system can call realloc when the FIFO is almost full to grow the size of the FIFO dynamically. Similarly, if the FIFO is almost empty, it can shrink the size freeing up memory.*
+
+A system is considered to be ___deterministic___ if when the system is run with the same set of inputs, it produces identical responses. Most real-time systems often require deterministic behavior, because testing can be used to certify performance. Dynamically-allocated FIFOs cause the behavior of one subsystem (that might allocate large amounts of RAM from the heap) to affect behavior in another unrelated subsystem (our FIFO that wishes to increase buffer size). It is better for real-time systems to be reliable and verifiable than to have higher performance. As the heap runs, it can become fragmented; meaning the free memory in the heap has many little pieces, rather than a few big pieces. Since the time to reallocate a buffer can vary tremendously, depending on the fragmentation of the heap, it will be difficult to predict execution time for the FIFO functions. Since a statically allocated FIFO is simple, we will be able to predict execution behavior. For these reasons, we will restrict FIFO construction to static allocation. In other words, you should not use malloc and free in your RTOS.
+
+There are many ways to implement a statically-allocated FIFO. We can use either two pointers or two indices to access the data in the FIFO. We can either use or not use a counter that specifies how many entries are currently stored in the FIFO. There are even hardware implementations. In this section we will present three implementations using semaphores.
+
+
+
+
 
 
 
