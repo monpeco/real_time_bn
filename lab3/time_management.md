@@ -281,8 +281,7 @@ The objective of this example is to synchronize Threads 1 and 2 (Program 3.3). I
 
 ###3.3.1. Producer/Consumer problem using a FIFO
 
-First in first out (FIFO) queue![](https://youtu.be/nPk_qDLw7Z0)
-*First in first out (FIFO) queue*
+[First in first out (FIFO) queue!](https://youtu.be/nPk_qDLw7Z0)
 
 A common scenario in operating systems is where producer generates data and a consumer consumes/processes data. To decouple the producer and consumer from having to work in lock-step a buffer is used to store the data, so the producer thread can produce when it runs and as long as there is room in the buffer and the consumer thread can process data when it runs, as long as the buffer is non-empty. A common implementation of such a buffer is a FIFO which preserves the order of data, so that the first piece of data generated in the first consumed.
 
@@ -302,7 +301,279 @@ A system is considered to be ___deterministic___ if when the system is run with 
 
 There are many ways to implement a statically-allocated FIFO. We can use either two pointers or two indices to access the data in the FIFO. We can either use or not use a counter that specifies how many entries are currently stored in the FIFO. There are even hardware implementations. In this section we will present three implementations using semaphores.
 
+--
+--
 
+###3.3.2. Three-semaphore FIFO implementation
+
+
+![FIFO used by main threads](https://youtu.be/9pJjfdqEZ0s)
+
+The first scenario we will solve is where there are multiple producers and multiple consumers. In this case all threads are main threads, which are scheduled by the OS. The FIFO is used to pass data from the producers to the consumers. In this situation, the producers do not care to which consumer their data are passed, and the consumers do not care from which producer the data arrived. These are main threads, so we will block producers when the FIFO is full and we will block consumers when the FIFO is empty.
+
+![Figure 3.7](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/b9622b89ba54bf8f74ccc75a9f7b28bc/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig03_07FIFO_DataFlow2.jpg)
+Figure 3.7. FIFO used to pass data from multiple producers to multiple consumers. All threads are main threads.
+
+The producer puts data into the FIFO. If the FIFO is full and the user calls `Fifo_Put`, there are two responses we could employ. The first response would be for the `Fifo_Put` routine to block assuming it is unacceptable to discard data. The second response would be for the `Fifo_Put` routine to discard the data and return with an error value. In this subsection we will block the producer on a full FIFO. This implementation can be used if the producer is a main thread, but cannot be used if the producer is an event thread or ISR. The consumer removes data from the FIFO. For most applications, the consumer will be a main thread that calls `Fifo_Get` when it needs data to process. After a get, the particular information returned from the get routine is no longer saved in the FIFO. If the FIFO is empty and the user tries to get, the `Fifo_Get` routine will block because we assume the consumer needs data to proceed. The FIFO is order preserving, such that the information returned by repeated calls to `Fifo_Get` give data in the same order as the data saved by repeated calls of `Fifo_Put`.
+
+The two-pointer implementation has, of course, two pointers. If we were to have infinite memory, a FIFO implementation is easy (Figure 3.8). `GetPt` points to the data that will be removed by the next call to `Fifo_Get`, and PutPt points to the empty space where the data will stored by the next call to `Fifo_Put`, see Program 3.4.
+
+![Figure 3.8](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/9b9b2505384365e4bbce927c9efdb5ce/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig03_08_InfiniteFifo.jpg)
+*Figure 3.8. The FIFO implementation with infinite memory.*
+
+```c
+uint32_t volatile *PutPt; // put next
+uint32_t volatile *GetPt; // get next
+void Fifo_Put(uint32_t data){ // call by value
+  *PutPt = data; // Put 
+  PutPt++;       // next 
+}
+uint32_t Fifo_Get(void){ uint32_t data; 
+  data = *GetPt; // return by reference
+  GetPt++;       // next
+  return data;  // true if success
+}
+```
+*Program 3.4. Code fragments showing the basic idea of a FIFO.*
+
+There are four modifications that are required to the above functions. If the FIFO is full when `Fifo_Put` is called then the function should block. Similarly, if the FIFO is empty when `Fifo_Get` is called, then the function should block. PutPt must be wrapped back up to the top when it reaches the bottom (Figure 3.9).
+
+![Figure 3.9](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/57db9a3afaa1acd86b29002b232294da/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig03_09_ExampleFIFOPut.jpg)
+Figure 3.9. The FIFO `Fifo_Put` operation showing the pointer wrap.
+
+The `GetPt` must also be wrapped back up to the top when it reaches the bottom (Figure 3.10).
+
+![Figure 3.10](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/c1c7fa623117b5a79b98a6f25a072a78/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig03_10_GetExampleFIFO.jpg)
+Figure 3.10. The FIFO `Fifo_Get` operation showing the pointer wrap.
+
+We will deploy two semaphores to describe the status of the FIFO, see Program 3.5. In this FIFO, each element is a 32-bit integer. The maximum number of elements, `FIFOSIZE`, is determined at compile time. In other words, to increase the allocation, we first change `FIFOSIZE`, and then recompile.
+
+The first semaphore, `CurrentSize`, specifies the number of elements currently in the FIFO. This semaphore is initialized to zero, meaning the FIFO is initially empty, it is incremented by `Fifo_Put` signifying one more element, and decremented by `Fifo_Get` signifying one less element.
+
+The second semaphore, `RoomLeft`, specifies the how many more elements could be put into the FIFO. This semaphore is initialized to `FIFOSIZE`, it is decremented by `Fifo_Put` signifying there is space for one less element, and incremented by `Fifo_Get` signifying there is space for one more element. When `RoomLeft` is zero, the FIFO is full.
+
+Race conditions and critical sections are important issues in systems using interrupts. If there are more than one producer or more than one consumer, access to the pointers represent a critical section, and hence we will need to protect the pointers using a FIFOmutex semaphore.
+
+```c
+#define FIFOSIZE 10       // can be any size
+uint32_t volatile *PutPt; // put next
+uint32_t volatile *GetPt; // get next
+uint32_t static Fifo[FIFOSIZE]; 
+int32_t CurrentSize;   // 0 means FIFO empty
+int32_t RoomLeft;      // 0 means FIFO full
+int32_t FIFOmutex;     // exclusive access to FIFO 
+// initialize FIFO
+void OS_Fifo_Init(void){ 
+  PutPt = GetPt = &Fifo[0]; // Empty
+  OS_InitSemaphore(&CurrentSize, 0);
+  OS_InitSemaphore(&RoomLeft, FIFOSIZE);
+  OS_InitSemaphore(&FIFOmutex, 1);
+}
+void OS_Fifo_Put(uint32_t data){
+  OS_Wait(&RoomLeft);
+  OS_Wait(&FIFOmutex);
+  *(PutPt) = data;     // Put
+  PutPt++;             // place to put next
+  if(PutPt == &Fifo[FIFOSIZE]){
+    PutPt = &Fifo[0];  // wrap
+  }
+  OS_Signal(&FIFOmutex);
+  OS_Signal(&CurrentSize);
+}
+uint32_t OS_Fifo_Get(void){ uint32_t data;
+  OS_Wait(&CurrentSize);
+  OS_Wait(&FIFOmutex);
+  data = *(GetPt);     // get data
+  GetPt++;             // points to next data to get
+  if(GetPt == &Fifo[FIFOSIZE]){
+    GetPt = &Fifo[0];  // wrap
+  }
+  OS_Signal(&FIFOmutex);
+  OS_Signal(&RoomLeft);
+  return data;
+}
+```
+*Program 3.5. Two-pointer three-semaphore implementation of a FIFO. This implementation is appropriate when producers and consumers are main threads.*
+
+####CHECKPOINT 3.4
+
+On average over the long term, what is the relationship between the number of times Wait is called compared to the number of times Signal is called?
+
+Since Signal increments and Wait decrements, we expect the average to be equal. On average, over a long period of time, the number of calls to Wait equals the number of calls to Signal. If Signal were called more often, then the semaphore value would become infinite. If Wait were called more often, then all threads would become blocked/stalled.
+
+####CHECKPOINT 3.5
+
+On average over the long term, what is the relationship between the number of times Put is successfully called compared to the number of times Get is successfully called? To answer this question consider a successful call to Put as a called that correctly stored data, and a successful call to Get as a call that correctly returned data.
+
+Since put enters data and Get removes, we expect the average to be equal. If Put were called more often, then the FIFO would become full and another call to Put could not occur. If Get were called more often, then FIFO would become empty and another successful call to Get could not occur. If the FIFO can store N pieces of data, then the total number of successful puts minus the total number of successful gets must be a value between 0 and N. On average, over a long period of time, the number of calls to Put equals the number of calls to Get.
+
+
+
+--
+--
+
+###3.3.3. Two-semaphore FIFO implementation
+
+If there is one producer as an event thread coupled with one or more consumers as main threads (Figure 3.11), the FIFO implementation shown in the previous section must be changed, because we cannot block or spin an event thread. If the FIFO is full when the producer calls `Put`, then that data will be lost. The number of times we lose data is recorded in LostData. The `Put` function returns an error (-1) if the data was not saved because the FIFO was full. This `Put` function cannot be called by multiple producers because of the read-modify-write sequence to `PutPt`. See Program 3.6. To tell if the FIFO is full, we simply compare the `CurrentSize` with its maximum. This is a statically allocated FIFO, so the maximum size is a constant.
+
+![Figure 3.11](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/c20e3f81c6169c772cc987911e672d2c/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig03_11_FifoFlowDiagram.jpg)
+Figure 3.11. FIFO used to pass data from a single producer to multiple consumers. The producer is an event thread and the consumers are main threads.
+
+```c
+#define FIFOSIZE 10       // can be any size
+uint32_t volatile *PutPt; // put next
+uint32_t volatile *GetPt; // get next
+uint32_t static Fifo[FIFOSIZE]; 
+int32_t CurrentSize;      // 0 means FIFO empty
+int32_t FIFOmutex;        // exclusive access to FIFO 
+uint32_t LostData;
+// initialize FIFO
+void OS_Fifo_Init(void){ 
+  PutPt = GetPt = &Fifo[0]; // Empty
+  OS_InitSemaphore(&CurrentSize, 0);
+  OS_InitSemaphore(&FIFOmutex, 1);
+  LostData=0;
+}
+int OS_FIFO_Put(uint32_t data){
+  if(CurrentSize == FIFOSIZE){
+    LostData++;       // error
+    return -1;
+  } 
+  *(PutPt) = data;    // Put
+  PutPt++;            // place for next
+  if(PutPt == &Fifo[FIFOSIZE]){
+    PutPt = &Fifo[0]; // wrap
+  }
+  OS_Signal(&CurrentSize);
+  return 0;
+}
+uint32_t OS_FIFO_Get(void){uint32_t data;
+  OS_Wait(&CurrentSize); // block if empty
+  OS_Wait(&FIFOmutex);
+  data = *(GetPt);    // get data
+  GetPt++;            // points to next data to get
+  if(GetPt == &Fifo[FIFOSIZE]){
+    GetPt = &Fifo[0]; // wrap
+  }
+  OS_Signal(&FIFOmutex);
+  return data;
+}
+```
+*Program 3.6. Two-pointer two-semaphore implementation of a FIFO. This implementation is appropriate when a single producer is running as an event thread and multiple consumers are running as main threads.*
+
+Note that, in this solution we no longer need the `RoomLeft` semaphore which was used to protect the multiple changes to PutPt that multiple producers would entail. A single producer does not have this problem. We still need the `CurrentSize` semaphore because we have multiple consumers that can change the GetPt pointer. The `FIFOmutex` semaphore is needed to prevent two consumers from reading the same data.
+
+--
+--
+
+###3.3.4. One-semaphore FIFO implementation
+
+[Streaming data from an event thread to a main thread](https://youtu.be/qC52iB3jYWM)
+
+
+If there is one producer as an event thread coupled with one consumer as a main thread (Figure 3.12), we can remove 
+the `mutex` semaphore. This `Get` function cannot be called by multiple consumers because of the read-modify-write sequence 
+to `GetI`. In the previous FIFO implementations, we used pointers, but in this example we use indices, see Program 3.7. 
+Whether you use pointers versus indices is a matter of style, and our advice is to use the mechanism you understand 
+the best. As long as there is one event thread calling Put and one main thread calling `Get`, this implementation does 
+not have any critical sections.
+
+![Figure 3.12](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/b519f2dd139d9ba309465a6e678ca3cf/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig03_12_FifoFlowDiagram.jpg)
+Figure 3.12. FIFO used to pass data from a single producer to a single consumer. The producer is an event thread and the consumer is a main thread.
+
+```c
+#define FIFOSIZE 10  // can be any size
+uint32_t PutI;       // index of where to put next
+uint32_t GetI;       // index of where to get next
+uint32_t Fifo[FIFOSIZE];
+int32_t CurrentSize; // 0 means FIFO empty, FIFOSIZE means full
+uint32_t LostData;   // number of lost pieces of data
+
+// initialize FIFO
+void OS_FIFO_Init(void){
+  PutI = GetI = 0;   // Empty
+  OS_InitSemaphore(&CurrentSize, 0);
+  LostData = 0;
+}
+
+int OS_FIFO_Put(uint32_t data){
+  if(CurrentSize == FIFOSIZE){
+    LostData++;
+    return -1;         // full
+  } else{
+    Fifo[PutI] = data; // Put
+    PutI = (PutI+1)%FIFOSIZE;
+    OS_Signal(&CurrentSize);
+    return 0;          // success
+  }
+}
+
+uint32_t OS_FIFO_Get(void){uint32_t data;
+  OS_Wait(&CurrentSize);    // block if empty
+  data = Fifo[GetI];        // get
+  GetI = (GetI+1)%FIFOSIZE; // place to get next
+  return data;
+}
+```
+*Program 3.7. Two-index one-semaphore implementation of a FIFO. This implementation is appropriate when a single producer is running as an event thread and a single consumer is running as a main thread.*
+
+This is the approach we recommend for Lab 3. The use of indexes rather than pointers also means all index arithmetic is a simple modulo the size of the FIFO to implement the wraparound.
+
+![Figure 3.13](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/a436193fd609b74e19f1ea6eea4102ed/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/FIFO.gif)
+Figure 3.13. This FIFO can store a maximum of four elements, using one semaphore. Put is called from an event thread, so it cannot block or spin. Get is called from a main thread, so it will block on the semaphore CurrentSize if the FIFO is empty.
+
+####CHECKPOINT 3.6
+
+Notice in Program 3.7 that there are two conditions that result in PutI equaling GetI. One condition is the FIFO is empty and the other condition is the FIFO is full. How does the software distinguish between these two conditions?
+
+If CurrentSize is 0, the FIFO is empty. If CurrentSize is equal to FIFOSIZE, the FIFO is full.
+
+--
+--
+
+###Thread sleeping
+
+<--! REDO -->
+
+[Video 3.4. sleeping](https://youtu.be/lj4TE2qhibM)
+
+Sometimes a thread needs to wait for a fixed amount of time. We will implement an OS_Sleep function that will make a thread dormant for a finite time. A thread in the sleep state will not be run. After the prescribed amount of time, the OS will make the thread active again. Sleeping would be used for tasks which are not real-time. In Program 3.8, the PeriodicStuff is run approximately once a second.
+
+```c
+void Task(void){
+  InitializationStuff();
+  while(1){
+    PeriodicStuff();
+    OS_Sleep(ONE_SECOND); // go to sleep for 1 second
+  }
+}
+```
+
+*Program 3.8. This thread uses sleep to execute its task approximately once a second.*
+
+To implement the sleep function, we could add a counter to each TCB and call it `Sleep`. If `Sleep` is zero, the thread 
+is not sleeping and can be run, meaning it is either in the run or active state. If `Sleep` is nonzero, the thread is 
+sleeping. We need to change the scheduler so that `RunPt` is updated with the next thread to run that is not sleeping 
+and not blocked, see Program 3.9.
+
+```c
+void Scheduler(void){
+  RunPt = RunPt->next; // skip at least one
+  while((RunPt->Sleep)||(RunPt-> blocked)){ 
+    RunPt = RunPt->next; // find one not sleeping and not blocked 
+  }
+}
+```
+
+*Program 3.9. Round-robin scheduler that skips threads if they are sleeping or blocked.*
+
+In this way, any thread with a nonzero `Sleep` counter will not be run. The user must be careful not to let all the threads go to sleep, because doing so would crash this implementation. Next, we need to add a periodic task that decrements the Sleep counter for any nonzero counter. When a thread wishes to sleep, it will set its Sleep counter and invoke the cooperative scheduler. The period of this decrementing task will determine the resolution of the parameter time.
+
+Notice that this implementation is not an exact time delay. When the sleep parameter is decremented to 0, the thread is not immediately run. Rather, when the parameter reaches 0, the thread is signified ready to run. If there are n other threads in the TCB list and the thread switch time is Δt, then it may take an additional n*Δt time for the thread to the launched after it awakens from sleeping.
+
+
+--
+--
 
 
 
