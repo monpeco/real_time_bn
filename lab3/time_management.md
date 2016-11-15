@@ -575,8 +575,84 @@ Notice that this implementation is not an exact time delay. When the sleep param
 --
 --
 
+###3.5.1. Basic principles
 
 
+[Basics of periodic timers](https://youtu.be/Y9AC8F7vvY4)
+
+
+Because time is a precious commodity for embedded systems there is a rich set of features available to manage time. If you connect a digital input to the microcontroller you could measure its
+
+* Period, time from one edge to the next
+* Frequency, number of edges in a fixed amount of time
+* Pulse width, time the signal is high, or time the signal is low
+If there are multiple digital inputs, then you can measure more complicated parameters such as frequency difference, period difference or phase.
+
+Alternately, you can create a digital output and have the software set its
+
+* Period
+* Frequency
+* Duty cycle (pulse-width modulation)
+
+If there are multiple digital outputs, then you can create more complicated patterns that are used in stepper motor and brushless DC motor controllers. For examples of projects that manage time on the TM4C123 see examples at 
+  * http://users.ece.utexas.edu/~valvano/arm/#Timer 
+  * http://edx-org-utaustinx.s3.amazonaws.com/UT601x/ValvanoWareTM4C123.zip
+
+For all the example projects on the TM4C123/MSP432 download and unzip these projects:
+  * http://edx-org-utaustinx.s3.amazonaws.com/UT601x/ValvanoWare.zip
+
+However in this section, we present the basic principles needed to create periodic interrupts using the timer. We begin by presenting five hardware components needed as shown in Figure 3.14.
+
+![Figure 3.14](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/e49a9a89b178f0149642711c66747ac1/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig03_13periodicInterrupts.jpg)
+Figure 3.14. Fundamental hardware components used to create periodic interrupts.
+
+The central component for creating periodic interrupts is a hardware counter. The counter may be 16, 24, 32, 48, or 64 bits wide. Let N be the number of bits in the counter. When creating periodic interrupts, it doesn’t actually matter if the module counts up or counts down. However, most of the software used in this class will configure the counter to decrement.
+
+Just like SysTick, as the counter counts down to 0, it sets a trigger flag and reloads the counter with a new value. The second component will be the reload value, which is the N-bit value loaded into the counter when it rolls over. Typically the reload value is a constant set once by the software during initialization. Let R be this constant value.
+
+The third component is the trigger flag, which is set when the counter reaches 0. This flag will be armed to request an interrupt. Software in the ISR will execute code to acknowledge or clear this flag.
+
+The fourth component will be the base clock with which we control the entire hardware system. On the TM4C123, we will select the 80-MHz system clock. On the MSP432, we will select the 12-MHz SMCLK. In both cases, these clocks are derived from the crystal; hence timing will be both accurate and stable. Let fbase be the frequency of the base clock (80 MHz or 12MHz) and tbase be the period of this clock (12.5 ns or about 83.33 ns). The fifth component will be a prescaler, which sits between the base clock and the clock used to decrement the counter. Most systems create the prescaler using a modulo-M counter, where M is greater than or equal to 1. This way, the frequency and period of the clock used to decrement the counter will be
+
+```
+fclk = fbase /M tclk = tbase *M
+```
+
+Software can configure the prescaler to slow down the counting. However, the interrupt period will be an integer multiple of tclk. In addition, the interrupt period must be less than 2N * tclk. Thus, the smaller the prescale M is, the more fine control the software has in selecting the interrupt period. On the other hand, the larger prescale M is, the longer the interrupt could be. Thus, the prescaler allows the software to control the trade-off between maximum interrupt period and the fine-tuning selection of the interrupt period.
+
+Because the counter goes from the reload value down to 0, and then back to the reload value, an interrupt will be triggered every R+1 counts. Thus the interrupt period, P, will be
+```
+  P = tbase *M * (R + 1)
+```
+Solving this equation for R, if we wish to create an interrupt with period P, we make
+```
+R = (P /(tbase *M )) – 1
+```
+
+Remember R must be an integer less than 2N. Most timers have a limited choice for the prescale M. Luckily, most microcontrollers have a larger number of timers. The TM4C123 has six 32-bit timers and six 64-bit timers. The MSP432 has four 16-bit timers and two 32-bit timers. The board support package, presented in the next section, provides support for two independent periodic interrupts. The BSP uses a separate 32-bit timer to implement the BSP_Time_Get feature.
+
+Initialization software follows these steps.
+
+1. Activate the base clock for the timer
+2. Set the timer mode to continuous down counting with automatic reload
+3. Set the prescale, M
+4. Set the reload value, R
+5. Arm the trigger flag in the timer
+6. Arm the timer in the NVIC
+7. Set the priority in the NVIC
+8. Clear trigger flag
+9. Enable interrupts (I=0)
+
+For more details on the timers for the TM4C123 or MSP432, see the corresponding Volume 2 Embedded Systems: Real-Time Interfacing to the MSP432 Microcontroller, ISBN: 978-1514676585, Jonathan Valvano, http://users.ece.utexas.edu/%7Evalvano/arm/msp432.htm
+
+Embedded Systems: Real-Time Interfacing to ARM Cortex-M Microcontrollers, ISBN: 978-1463590154, Jonathan Valvano, http://users.ece.utexas.edu/~valvano/arm/outline.htm
+
+--
+--
+
+###3.5.2. Board support package
+
+[Periodic Interrupts in the BSP](https://youtu.be/MPfeeZGWPs4)
 
 
 
