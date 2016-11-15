@@ -653,6 +653,61 @@ Embedded Systems: Real-Time Interfacing to ARM Cortex-M Microcontrollers, ISBN: 
 ###3.5.2. Board support package
 
 [Periodic Interrupts in the BSP](https://youtu.be/MPfeeZGWPs4)
+  
+
+When using the periodic interrupt features in the BSP, the user or operating system writes a regular ___void-void___ C function. During initialization, we activate the periodic interrupt by passing a pointer to this void-void function. Furthermore, we specify the desired interrupt frequency (Hz) and hardware priority for this timer. The passed function is registered as a callback with the BSP, which it invokes at the specified frequency.
+
+The priority is limited to 0 to 6, because priority 7 is reserved for the SysTick ISR used to switch main threads. We assign priority such that lower numbers signify higher priority. If an interrupt service routine is running at level p when another interrupt with priority less than p occurs, the processor will suspend the first ISR and immediately execute the higher priority ISR. If an interrupt service routine is running at level p when another interrupt with priority greater than or equal to p occurs, the processor will finish the higher priority ISR first, and then it will execute the lower/equal priority ISR. Thus, interrupts that have equal priority are handled sequentially in a first come first served manner.
+
+One timer on the MSP432 uses 32 bits and the others use only 16 bits. Thus, the slowest frequency available on some of the MSP432 timers is 8 Hz. All timers on the TM4C123 support frequencies as slow as 1 Hz. The fastest frequency was capped at 10 kHz, in order to prevent one ISR from monopolizing the processor. Regardless of the interrupt rate, it is important to estimate the utilization of each periodic task. Maximum utilization is defined as the ratio of the maximum execution time of the ISR (Δt) divided by the interrupt period, P:
+
+```
+Max utilization = 100 * Δt / P (in percent)
+```
+
+The BSP provides three timers. For each timer there are two functions, one to start and one to stop. The initialization will not clear the I bit, but will set up the timer for periodic interrupts, arm the trigger in the timer, set the priority in the NVIC, and arm the timer in the NVIC. The prototypes for these functions (found in the BSP.h file) are as follows:
+
+```c
+// ------------BSP_PeriodicTask_Init------------
+// Activate an interrupt to run a user task periodically.
+// Input: task is a pointer to a user function
+//        freq is number of interrupts per second 1 Hz to 10 kHz
+//        priority is a number 0 to 6
+// Output: none
+void BSP_PeriodicTask_Init(void(*task)(void), uint32_t freq, uint8_t priority);
+
+// ------------BSP_PeriodicTask_Stop------------
+// Deactivate the interrupt running a user task periodically.
+// Input: none
+// Output: none
+void BSP_PeriodicTask_Stop(void);
+```
+
+Each timer uses a base clock, prescaler, and finite number of bits in the counter as shown in Table 3.2. Let freq be the desired interrupt frequency, freq=1/P. The initialization routine will calculate the reload value, R, using base clock frequency, fbase and prescale M. The frequency of the counter clock, fclk, is the base clock divided by the prescale
+
+```
+fclk = fbase / M
+```
+Because the reload value must be an integer, best results occur if fclk/freq is an integer. The reload value will be:
+```
+R = fclk/freq - 1
+```
+
+
+|BSP function |	processor	| N	| fbase	| M	| fclk	| Slowest |
+|-------------|-----------|---|-------|---|-------|---------|
+| BSP_PeriodicTask_Init	| TM4C123	| 64	| 80 MHz	| 1	| 80 MHz	| 1 Hz|
+| BSP_PeriodicTask_InitB	| TM4C123	| 64	| 80 MHz	| 1	| 80 MHz	| 1 Hz|
+| BSP_PeriodicTask_InitC	| TM4C123	| 64	| 80 MHz	| 1	| 80 MHz	| 1 Hz|
+| BSP_PeriodicTask_Init	| MSP432	| 32	| 12 MHz	| 1	| 12 MHz	| 1 Hz|
+| BSP_PeriodicTask_InitB	| MSP432	| 16	| 12 MHz	| 24	| 500 kHz	| 8 Hz|
+| BSP_PeriodicTask_InitC	| MSP432	| 16	| 12 MHz	| 24	| 500 kHz	| 8 Hz|
+
+*Table 3.2. Internal parameters of the periodic task feature implemented in the BSP.*
+
+--
+--
 
 
 
+  
