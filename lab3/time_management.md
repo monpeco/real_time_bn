@@ -314,18 +314,21 @@ There are many ways to implement a statically-allocated FIFO. We can use either 
 ###3.3.2. Three-semaphore FIFO implementation
 
 
-![FIFO used by main threads](https://youtu.be/9pJjfdqEZ0s)
+[FIFO used by main threads](https://youtu.be/9pJjfdqEZ0s)
 
 The first scenario we will solve is where there are multiple producers and multiple consumers. In this case all threads are main threads, which are scheduled by the OS. The FIFO is used to pass data from the producers to the consumers. In this situation, the producers do not care to which consumer their data are passed, and the consumers do not care from which producer the data arrived. These are main threads, so we will block producers when the FIFO is full and we will block consumers when the FIFO is empty.
 
 ![Figure 3.7](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/b9622b89ba54bf8f74ccc75a9f7b28bc/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig03_07FIFO_DataFlow2.jpg)
-Figure 3.7. FIFO used to pass data from multiple producers to multiple consumers. All threads are main threads.
+*Figure 3.7. FIFO used to pass data from multiple producers to multiple consumers. All threads are main threads.*
 
-The producer puts data into the FIFO. If the FIFO is full and the user calls `Fifo_Put`, there are two responses we could employ. The first response would be for the `Fifo_Put` routine to block assuming it is unacceptable to discard data. The second response would be for the `Fifo_Put` routine to discard the data and return with an error value. In this subsection we will block the producer on a full FIFO. This implementation can be used if the producer is a main thread, but cannot be used if the producer is an event thread or ISR. The consumer removes data from the FIFO. For most applications, the consumer will be a main thread that calls `Fifo_Get` when it needs data to process. After a get, the particular information returned from the get routine is no longer saved in the FIFO. If the FIFO is empty and the user tries to get, the `Fifo_Get` routine will block because we assume the consumer needs data to proceed. The FIFO is order preserving, such that the information returned by repeated calls to `Fifo_Get` give data in the same order as the data saved by repeated calls of `Fifo_Put`.
+___The producer puts data into the FIFO___. If the FIFO is full and the user calls `Fifo_Put`, there are two responses we could employ. The first response would be for the `Fifo_Put` routine to block assuming it is unacceptable to discard data. The second response would be for the `Fifo_Put` routine to discard the data and return with an error value. In this subsection we will block the producer on a full FIFO. This implementation can be used if the producer is a main thread, but cannot be used if the producer is an event thread or ISR. 
+
+___The consumer removes data from the FIFO___. For most applications, the consumer will be a main thread that calls `Fifo_Get` when it needs data to process. After a get, the particular information returned from the get routine is no longer saved in the FIFO. If the FIFO is empty and the user tries to get, the `Fifo_Get` routine will block because we assume the consumer needs data to proceed. The FIFO is order preserving, such that the information returned by repeated calls to `Fifo_Get` give data in the same order as the data saved by repeated calls of `Fifo_Put`.
 
 The two-pointer implementation has, of course, two pointers. If we were to have infinite memory, a FIFO implementation is easy (Figure 3.8). `GetPt` points to the data that will be removed by the next call to `Fifo_Get`, and PutPt points to the empty space where the data will stored by the next call to `Fifo_Put`, see Program 3.4.
 
 ![Figure 3.8](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/9b9b2505384365e4bbce927c9efdb5ce/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig03_08_InfiniteFifo.jpg)
+
 *Figure 3.8. The FIFO implementation with infinite memory.*
 
 ```c
@@ -346,12 +349,12 @@ uint32_t Fifo_Get(void){ uint32_t data;
 There are four modifications that are required to the above functions. If the FIFO is full when `Fifo_Put` is called then the function should block. Similarly, if the FIFO is empty when `Fifo_Get` is called, then the function should block. PutPt must be wrapped back up to the top when it reaches the bottom (Figure 3.9).
 
 ![Figure 3.9](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/57db9a3afaa1acd86b29002b232294da/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig03_09_ExampleFIFOPut.jpg)
-Figure 3.9. The FIFO `Fifo_Put` operation showing the pointer wrap.
+*Figure 3.9. The FIFO `Fifo_Put` operation showing the pointer wrap.*
 
 The `GetPt` must also be wrapped back up to the top when it reaches the bottom (Figure 3.10).
 
 ![Figure 3.10](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/c1c7fa623117b5a79b98a6f25a072a78/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig03_10_GetExampleFIFO.jpg)
-Figure 3.10. The FIFO `Fifo_Get` operation showing the pointer wrap.
+*Figure 3.10. The FIFO `Fifo_Get` operation showing the pointer wrap.*
 
 We will deploy two semaphores to describe the status of the FIFO, see Program 3.5. In this FIFO, each element is a 32-bit integer. The maximum number of elements, `FIFOSIZE`, is determined at compile time. In other words, to increase the allocation, we first change `FIFOSIZE`, and then recompile.
 
