@@ -434,7 +434,8 @@ Since put enters data and Get removes, we expect the average to be equal. If Put
 If there is one producer as an event thread coupled with one or more consumers as main threads (Figure 3.11), the FIFO implementation shown in the previous section must be changed, because we cannot block or spin an event thread. If the FIFO is full when the producer calls `Put`, then that data will be lost. The number of times we lose data is recorded in LostData. The `Put` function returns an error (-1) if the data was not saved because the FIFO was full. This `Put` function cannot be called by multiple producers because of the read-modify-write sequence to `PutPt`. See Program 3.6. To tell if the FIFO is full, we simply compare the `CurrentSize` with its maximum. This is a statically allocated FIFO, so the maximum size is a constant.
 
 ![Figure 3.11](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/c20e3f81c6169c772cc987911e672d2c/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig03_11_FifoFlowDiagram.jpg)
-Figure 3.11. FIFO used to pass data from a single producer to multiple consumers. The producer is an event thread and the consumers are main threads.
+
+* Figure 3.11. FIFO used to pass data from a single producer to multiple consumers. The producer is an event thread and the consumers are main threads.*
 
 ```c
 #define FIFOSIZE 10       // can be any size
@@ -502,7 +503,8 @@ the best. As long as there is one event thread calling Put and one main thread c
 not have any critical sections.
 
 ![Figure 3.12](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/b519f2dd139d9ba309465a6e678ca3cf/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig03_12_FifoFlowDiagram.jpg)
-Figure 3.12. FIFO used to pass data from a single producer to a single consumer. The producer is an event thread and the consumer is a main thread.
+
+*Figure 3.12. FIFO used to pass data from a single producer to a single consumer. The producer is an event thread and the consumer is a main thread.*
 
 ```c
 #define FIFOSIZE 10  // can be any size
@@ -543,7 +545,8 @@ uint32_t OS_FIFO_Get(void){uint32_t data;
 This is the approach we recommend for Lab 3. The use of indexes rather than pointers also means all index arithmetic is a simple modulo the size of the FIFO to implement the wraparound.
 
 ![Figure 3.13](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/a436193fd609b74e19f1ea6eea4102ed/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/FIFO.gif)
-Figure 3.13. This FIFO can store a maximum of four elements, using one semaphore. Put is called from an event thread, so it cannot block or spin. Get is called from a main thread, so it will block on the semaphore CurrentSize if the FIFO is empty.
+
+*Figure 3.13. This FIFO can store a maximum of four elements, using one semaphore. Put is called from an event thread, so it cannot block or spin. Get is called from a main thread, so it will block on the semaphore CurrentSize if the FIFO is empty.*
 
 ####CHECKPOINT 3.6
 
