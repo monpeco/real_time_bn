@@ -372,6 +372,8 @@ uint32_t static Fifo[FIFOSIZE];
 int32_t CurrentSize;   // 0 means FIFO empty
 int32_t RoomLeft;      // 0 means FIFO full
 int32_t FIFOmutex;     // exclusive access to FIFO 
+
+
 // initialize FIFO
 void OS_Fifo_Init(void){ 
   PutPt = GetPt = &Fifo[0]; // Empty
@@ -379,6 +381,8 @@ void OS_Fifo_Init(void){
   OS_InitSemaphore(&RoomLeft, FIFOSIZE);
   OS_InitSemaphore(&FIFOmutex, 1);
 }
+
+
 void OS_Fifo_Put(uint32_t data){
   OS_Wait(&RoomLeft);
   OS_Wait(&FIFOmutex);
@@ -390,7 +394,10 @@ void OS_Fifo_Put(uint32_t data){
   OS_Signal(&FIFOmutex);
   OS_Signal(&CurrentSize);
 }
-uint32_t OS_Fifo_Get(void){ uint32_t data;
+
+
+uint32_t OS_Fifo_Get(void){ 
+  uint32_t data;
   OS_Wait(&CurrentSize);
   OS_Wait(&FIFOmutex);
   data = *(GetPt);     // get data
@@ -437,6 +444,8 @@ uint32_t static Fifo[FIFOSIZE];
 int32_t CurrentSize;      // 0 means FIFO empty
 int32_t FIFOmutex;        // exclusive access to FIFO 
 uint32_t LostData;
+
+
 // initialize FIFO
 void OS_Fifo_Init(void){ 
   PutPt = GetPt = &Fifo[0]; // Empty
@@ -444,6 +453,8 @@ void OS_Fifo_Init(void){
   OS_InitSemaphore(&FIFOmutex, 1);
   LostData=0;
 }
+
+
 int OS_FIFO_Put(uint32_t data){
   if(CurrentSize == FIFOSIZE){
     LostData++;       // error
@@ -457,6 +468,8 @@ int OS_FIFO_Put(uint32_t data){
   OS_Signal(&CurrentSize);
   return 0;
 }
+
+
 uint32_t OS_FIFO_Get(void){uint32_t data;
   OS_Wait(&CurrentSize); // block if empty
   OS_Wait(&FIFOmutex);
