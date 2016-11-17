@@ -559,7 +559,7 @@ If CurrentSize is 0, the FIFO is empty. If CurrentSize is equal to FIFOSIZE, the
 
 ###Thread sleeping
 
-<--! REDO -->
+![thread sleeping](https://cloud.githubusercontent.com/assets/16638078/20404113/443dd9d2-ace2-11e6-8199-d4dfb53feac4.png)
 
 [Video 3.4. sleeping](https://youtu.be/lj4TE2qhibM)
 
