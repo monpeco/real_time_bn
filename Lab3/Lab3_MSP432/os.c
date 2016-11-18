@@ -19,7 +19,9 @@ struct tcb{
   int32_t *sp;       // pointer to stack (valid for threads not running
   struct tcb *next;  // linked-list pointer
    // nonzero if blocked on this semaphore
+	uint32_t block;
    // nonzero if this thread is sleeping
+	uint32_t sleep;	
 //*FILL THIS IN****
 };
 typedef struct tcb tcbType;
@@ -45,6 +47,22 @@ void OS_Init(void){
 void SetInitialStack(int i){
 
   // **Same as Lab 2 and Lab 3****
+	tcbs[i].sp = &Stacks[i][STACKSIZE-16]; // thread stack pointer
+  Stacks[i][STACKSIZE-1] = 0x01000000;   // thumb bit
+  Stacks[i][STACKSIZE-3] = 0x14141414;   // R14
+  Stacks[i][STACKSIZE-4] = 0x12121212;   // R12
+  Stacks[i][STACKSIZE-5] = 0x03030303;   // R3
+  Stacks[i][STACKSIZE-6] = 0x02020202;   // R2
+  Stacks[i][STACKSIZE-7] = 0x01010101;   // R1
+  Stacks[i][STACKSIZE-8] = 0x00000000;   // R0
+  Stacks[i][STACKSIZE-9] = 0x11111111;   // R11
+  Stacks[i][STACKSIZE-10] = 0x10101010;  // R10
+  Stacks[i][STACKSIZE-11] = 0x09090909;  // R9
+  Stacks[i][STACKSIZE-12] = 0x08080808;  // R8
+  Stacks[i][STACKSIZE-13] = 0x07070707;  // R7
+  Stacks[i][STACKSIZE-14] = 0x06060606;  // R6
+  Stacks[i][STACKSIZE-15] = 0x05050505;  // R5
+  Stacks[i][STACKSIZE-16] = 0x04040404;  // R4
 }
 
 //******** OS_AddThreads ***************
@@ -59,7 +77,25 @@ int OS_AddThreads(void(*thread0)(void),
                   void(*thread4)(void),
                   void(*thread5)(void)){
   // **similar to Lab 2. initialize as not blocked, not sleeping****
+  int32_t status;
+	status = StartCritical();
+	tcbs[0].next = &tcbs[1]; // 0 points to 1
+  tcbs[1].next = &tcbs[2]; // 1 points to 2
+  tcbs[2].next = &tcbs[3]; // 2 points to 3
+  tcbs[3].next = &tcbs[4]; // 3 points to 4	
+	tcbs[4].next = &tcbs[5]; // 4 points to 5 
+	tcbs[5].next = &tcbs[0]; // 5 points to 0 										
 
+  SetInitialStack(0); Stacks[0][STACKSIZE-2] = (int32_t)(thread0); // PC
+  SetInitialStack(1); Stacks[1][STACKSIZE-2] = (int32_t)(thread1); // PC
+  SetInitialStack(2); Stacks[2][STACKSIZE-2] = (int32_t)(thread2); // PC
+  SetInitialStack(3); Stacks[3][STACKSIZE-2] = (int32_t)(thread3); // PC
+  SetInitialStack(4); Stacks[4][STACKSIZE-2] = (int32_t)(thread4); // PC
+  SetInitialStack(5); Stacks[5][STACKSIZE-2] = (int32_t)(thread5); // PC										
+										
+	RunPt = &tcbs[0];       // thread 0 will run first
+										
+	EndCritical(status);									
   return 1;               // successful
 }
 
