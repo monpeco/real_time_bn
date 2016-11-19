@@ -419,6 +419,7 @@ void Task1(void){
   }
 }
 ```
+
 ```c
 void Task2(void){
   Init2();
@@ -427,8 +428,9 @@ void Task2(void){
       Output2();
   }
 }
-```c
 ```
+
+```c
 void Task3(void){
   Init3();
   while(1){
@@ -436,6 +438,7 @@ void Task3(void){
   }
 }
 ```
+
 ```c
 void Task4(void){
   Init4();
@@ -641,7 +644,7 @@ BSP_PeriodicTask_Init(&checkbuttons, 10, 2);
 You will NOT use `BSP_PeriodicTask_Init` in Lab 2, but will add it within Lab 3. However you will need 
 to understand function pointers to implement Lab 2.
 
-Another application of function pointers is a hook. A hook is an OS feature that allows the user to attach 
+Another application of function pointers is a ___hook___. A hook is an OS feature that allows the user to attach 
 functions to strategic places in the OS. Examples of places we might want to place hooks include: whenever 
 the OS has finished initialization, the OS is running the scheduler, or whenever a new thread is created. 
 To use a hook, the user writes a function, calls the OS and passes a function pointer. When that event 
@@ -659,29 +662,32 @@ occurs, the OS calls the user function. Hooks are extremely useful for debugging
 ####How Interrups work
 1. Interrup Vector Table
 2. Initializacion (one-time)
-  a. Setup communication mechanisn
-  b. ARM/Enable the device
-  c. Priority (3-bits, 0-Highest, 7-lowest)
-  d. Enable all interrups (I=0)
+  * Setup communication mechanisn
+  * ARM/Enable the device
+  * Priority (3-bits, 0-Highest, 7-lowest)
+  * Enable all interrups (I=0)
 3. ISR (Interrupt Service Rutine)
-  a. ACK the interrupt
-  b. Action
+  * ACK the interrupt
+  * Action
 
 ####Hardware
 
 ![hardware](https://cloud.githubusercontent.com/assets/16638078/19671860/39d79e1c-9a48-11e6-898a-cd4d877bb0f6.png)
 
 Condition for an Interrup to have effect
-1. Triggers
-2. I=0
-3. NVIC (Nested-Vector Interrupt Control) (Flag configured - ARM)
-4. Priority must be higher that the current thread
+
+* Triggers
+* I=0
+* NVIC (Nested-Vector Interrupt Control) (Flag configured - ARM)
+* Priority must be higher that the current thread
+
 
 Saving state of current thread
-1. Push registers 8 of them (R0-R3, R12, PC(R15), LR(R14), PSR(NVZC) )
-2. PC <- IVT (Interrupt Vector Table)
-3. IPSR <- Interrup Number
-4. LR <- 0xFFFF FFF9
+
+* Push registers 8 of them (R0-R3, R12, PC(R15), LR(R14), PSR(NVZC) )
+* PC <- IVT (Interrupt Vector Table)
+* IPSR <- Interrup Number
+* LR <- 0xFFFF FFF9
 
 
 
