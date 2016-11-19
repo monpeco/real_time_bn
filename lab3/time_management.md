@@ -630,7 +630,8 @@ For all the example projects on the TM4C123/MSP432 download and unzip these proj
 However in this section, we present the basic principles needed to create periodic interrupts using the timer. We begin by presenting five hardware components needed as shown in Figure 3.14.
 
 ![Figure 3.14](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/e49a9a89b178f0149642711c66747ac1/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig03_13periodicInterrupts.jpg)
-Figure 3.14. Fundamental hardware components used to create periodic interrupts.
+
+*Figure 3.14. Fundamental hardware components used to create periodic interrupts.*
 
 The central component for creating periodic interrupts is a hardware counter. The counter may be 16, 24, 32, 48, or 64 bits wide. Let N be the number of bits in the counter. When creating periodic interrupts, it doesn’t actually matter if the module counts up or counts down. However, most of the software used in this class will configure the counter to decrement.
 
