@@ -1244,7 +1244,7 @@ int main(void){
   // when grading change 1000 to 4-digit number from edX
   BSP_LCD_FillScreen(BSP_LCD_Color565(0, 0, 0));
   TExaS_Init(GRADER, 1000);          // initialize the Lab 3 grader
-//  TExaS_Init(LOGICANALYZER, 1000); // initialize the Lab 3 logic analyzer
+  //TExaS_Init(LOGICANALYZER, 1000); // initialize the Lab 3 logic analyzer
   OS_Launch(BSP_Clock_GetFreq()/THREADFREQ); // doesn't return, interrupts enabled in here
   return 0;             // this never executes
 }
