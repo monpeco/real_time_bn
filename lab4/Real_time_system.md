@@ -234,3 +234,130 @@ You would change the 32 to 200 (double copy of each data), and change all the 16
 ###4.1.4. Real-time control systems
 
 [Real-time control systems](https://youtu.be/mijSiCD_9Dc)
+
+A control system is a collection of mechanical and electrical devices connected for the purpose of commanding, directing, or regulating a physical plant (see Figure 4.9). The real state variables are the properties of the physical plant that are to be controlled. The sensor and state estimator comprise a data acquisition system. The goal of this data acquisition system is to estimate the state variables. A closed-loop control system uses the output of the state estimator in a feedback loop to drive the errors to zero. The control system compares these estimated state variables, X'(t), to the desired state variables, X*(t), in order to decide appropriate action, U(t). The actuator is a transducer that converts the control system commands, U(t), into driving forces, V(t), that are applied to the physical plant. In general, the goal of the control system is to drive the real state variables to equal the desired state variables. In actuality though, the controller attempts to drive the estimated state variables to equal the desired state variables. It is important to have an accurate state estimator, because any differences between the estimated state variables and the real state variables will translate directly into controller errors. If we define the error as the difference between the desired and estimated state variables:
+
+```
+       e(t) = X*(t)- X’(t)
+```
+
+then the control system will attempt to drive e(t) to zero. In general control theory, X(t), X’(t), X*(t), U(t), V(t) and e(t) refer to vectors, but the examples in this chapter control only a single parameter. Even though this chapter shows one-dimensional systems, and it should be straight-forward to apply standard multivariate control theory to more complex problems. We usually evaluate the effectiveness of a control system by determining three properties: steady state controller error, transient response, and stability. The steady state controller error is the average value of e(t). The transient response is how long does the system take to reach 99% of the final output after X* is changed. A system is stable if steady state (smooth constant output) is achieved. The error is small and bounded on a stable system. An unstable system oscillates, or it may saturate.
+
+
+![Figure 4.9](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/858758a0ed1521d5b75bb579adb0cd79/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig04_09_ControlSystem.jpg)
+*Figure 4.9. Block diagram of a microcomputer-based closed-loop control system.*
+
+An open-loop control system does not include a state estimator. It is called open loop because there is no feedback path providing information about the state variable to the controller. It will be difficult to use open-loop with the plant that is complex because the disturbing forces will have a significant effect on controller error. On the other hand, if the plant is well-defined and the disturbing forces have little effect, then an open-loop approach may be feasible. Because an open-loop control system does not know the current values of the state variables, large errors can occur. Stepper motors are often used in open loop fashion.
+
+In order to make a fast and accurate system, we can use linear control theory to develop the digital controller. There are three components of a proportional integral derivative PID controller.
+
+```
+U(t)=KpE(t)+∫0tKiE(τ)dτ+KddE(t)dt
+```
+
+The error, E(t), is defined as the present set-point, X*(t), minus the measured value of the controlled variable, X’(t). The PID controller calculates its output by summing three terms. The first term is proportional to the error. The second is proportional to the integral of the error over time, and the third is proportional to the rate of change (first derivative) of the error term. The values of Kp, Ki and Kd are design parameters and must be properly chosen in order for the control system to operate properly. The proportional term of the PID equation contributes an amount to the control output that is directly proportional to the current process error. The gain term Kp adjusts exactly how much the control output response should change in response to a given error level. The larger the value of Kp, the greater the system reaction to differences between the set-point and the actual state variable. However, if Kp is too large, the response may exhibit an undesirable degree of oscillation or even become unstable. On the other hand, if Kp is too small, the system will be slow or unresponsive. An inherent disadvantage of proportional-only control is its inability to eliminate the steady state errors (offsets) that occur after a set-point change or a sustained load disturbance.
+
+The integral term converts the first order proportional controller into a second order system capable of tracking process disturbances. It adds to the controller output a factor that takes corrective action for any changes in the load level of the system. This integral term is scaled to the sum of all previous process errors in the system. As long as there is a process error, the integral term will add more amplitude to the controller output until the sum of all previous errors is zero. Theoretically, as long as the sign of Ki is correct, any value of Ki will eliminate offset errors. But, for extremely small values of Ki, the controlled variables will return to the set-point very slowly after a load upset or set-point change occurs. On the other hand, if Ki is too large, it tends to produce oscillatory response of the controlled process and reduces system stability. The undesirable effects of too much integral action can be avoided by proper tuning (adjusting) the controller or by including derivative action which tends to counteract the destabilizing effects.
+
+The derivative action of a PID controller adds a term to the controller output scaled to the slope (rate of change) of the error term. The derivative term “anticipates” the error, providing a greater control response when the error term is changing in the wrong direction and a dampening response when the error term is changing in the correct direction. The derivative term tends to improve the dynamic response of the controlled variable by decreasing the process setting time, the time it takes the process to reach steady state. But if the process measurement is noisy, that is, if it contains high-frequency random fluctuations, then the derivative of the measured (controlled) variable will change wildly, and derivative action will amplify the noise unless the measurement is filtered.
+
+
+We can also use just some of the terms. For example a proportional/integrator (PI) controller drops the derivative term. We will analyze the digital control system in the frequency domain, see Figure 4.10. Let X(s) be the Laplace transform of the state variable x(t). Let X*(s) be the Laplace transform of the desired state variable x*(t). Let E(s) be the Laplace transform of the error
+
+```
+E(s) = X*(s) - X(s)
+```
+
+Let G(s) be the transfer equation of the PID linear controller. PID controllers are unique in this aspect. In other words we cannot write a transfer equation for a bang-bang, incremental or fuzzy logic controller.
+
+```
+G(s)=Kp+Kds+Kis
+```
+
+Let H(s) be the transfer equation of the physical plant. If we assume the physical plant (e.g., a DC motor) has a simple single pole behavior, then we can specify its response in the frequency domain with two parameters. m is the DC gain and τ is its time constant. The transfer function of this simple motor is
+
+```
+H(s)=m1+τs
+```
+
+The overall gain of the control system is
+
+X(s)X∗(s)=G(s)H(s)1+G(s)H(s)
+
+
+![Figure 4.10](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/9c5689daca170abb9f967354c62f73d9/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig04_10_ControlSystemLaplace.jpg)
+*Figure 4.10. Block diagram of a linear control system in the frequency domain.*
+
+Theoretically we can choose controller constants, Kp Ki and Kd, to create the desired controller response. Unfortunately it can be difficult to estimate m and τ. If a load is applied to the motor, then m and τ will change.
+
+To simplify the PID controller implementation, we break the controller equation into separate proportion, integral and derivative terms. I.e., let
+
+```
+U(t) = P(t) + I(t) + D(t)
+```
+
+where U(t) is the actuator output, and P(t), I(t) and D(t) are the proportional, integral and derivative components respectively. The proportional term makes the actuator output linearly related to the error. Using a proportional term creates a control system that applies more energy to the plant when the error is large. To implement the proportional term we simply convert it to discrete time.
+
+```
+P(t)=KpE(t)⟶P(n)=KpE(n)
+```
+
+where the index "n" refers to the discrete time input of E(n) and output of P(n).
+
+Observation: In order to develop digital signal processing equations, it is imperative that the control system be executed on a regular and periodic rate.
+
+Common error: If the sampling rate varies, then controller errors will occur.
+
+The integral term makes the actuator output related to the integral of the error. Using an integral term often will improve the steady state error of the control system. If a small error accumulates for a long time, this term can get large. Some control systems put upper and lower bounds on this term, called anti-reset-windup, to prevent it from dominating the other terms. The implementation of the integral term requires the use of a discrete integral or sum. If I(n) is the current control output, and I(n-1) is the previous calculation, the integral term is simply
+
+```
+I(t)=∫0tKiE(τ)dτ⟶I(n)=∑m=1m=nKiE(i)Δt⟶I(n)=I(n−1)+KiE(n)Δt
+```
+
+where ∆t is the sampling rate of E(n).
+
+The derivative term makes the actuator output related to the derivative of the error. This term is usually combined with either the proportional and/or integral term to improve the transient response of the control system. The proper value of Kd will provide for a quick response to changes in either the set point or loads on the physical plant. An incorrect value may create an overdamped (very slow response) or an underdamped (unstable oscillations) response. There are a couple of ways to implement the discrete time derivative. The simple approach is
+
+```
+D(t)=KddE(t)dt⟶D(n)=KdE(n)−E(n−1)Δt
+```
+
+In practice, this first order equation is quite susceptible to noise. Figure 4.11 shows a sequence of E(n) with some added noise. Notice that huge errors occur when the above equation is used to calculate derivative.
+
+
+![Figure 4.11](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/f6fbc126722f5f425dd0331d0a555b7f/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig04_11_Derivative.jpg)
+Figure 4.11. Illustration of the effect noise plays on the calculation of discrete derivative.
+
+In most practical control systems, the derivative is calculated using the average of two derivatives calculated across different time spans. For example
+
+```
+D(n)=Kd(12E(n)−E(n−3)3Δt+12E(n−1)−E(n−2)Δt)
+```
+
+that simplifies to
+
+```
+D(n)=Kd(E(n)+3E(n−1)−3E(n−2)−E(n−3)6Δt)
+```
+
+Linear regression through multiple points can yield the slope and yet be immune to noise.
+
+
+The goal of this example is to spin a DC motor at a constant speed. A tachometer is used to measure the current speed in rotations per minute (Speed). The operator selects the desired speed, Xstar also in rpm. The motor time constant is defined as the time it takes the motor to reach 63% of the final speed after the delivered power is changed. Typically we run the controller ten times faster than its time constant. For this motor, the time constant is 100 ms, so we run the digital control loop every 10 ms.
+
+```c
+void PIControlLoop(void){ // event thread
+  E = Xstar-Speed; 
+  P = (5250*E)/1000;   // Kp = 5.250
+  I = I+(158*E)/1000;  // KiDt = 0.158
+  if(I < -500) I=-500; // anti-reset windup
+  if(I > 40000) I=40000;
+  U = P+I;             // PI controller
+  if(U < 100) U=100;   // Constrain output
+  if(U>39900) U=39900; // 100 to 39900
+  Actuator(U);         // output 
+}
+```
+
+*Program 4.4. Proportional-integral motor controller.*
+
