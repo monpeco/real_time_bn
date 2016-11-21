@@ -361,3 +361,420 @@ void PIControlLoop(void){ // event thread
 
 *Program 4.4. Proportional-integral motor controller.*
 
+--
+--
+
+###4.2.2. Edge-triggered Interrupts on the MSP432
+
+![Edge-triggered Interrupts on the MSP432](https://youtu.be/0-Tir72M0Zw)
+
+Synchronizing software to hardware events requires the software to recognize when the hardware changes states from busy to done. Many times the busy to done state transition is signified by a rising (or falling) edge on a status signal in the hardware. For these situations, we connect this status signal to an input of the microcontroller, and we use edge-triggered interfacing to configure the interface to set a flag on the rising (or falling) edge of the input. Using edge-triggered interfacing allows the software to respond quickly to changes in the external world. If we are using busy-wait synchronization, the software waits for the flag. If we are using interrupt synchronization, we configure the flag to request an interrupt when set. Each of the digital I/O pins on ports P1 – P6 can be configured for edge triggering. Table 4.3 shows many of the registers available for Port 1. The differences between members of the MSP432 family include the number of ports (e.g., the MSP432P401 has ports 1 – 10), which pins can interrupt (e.g., the MSP432P401 can interrupt on ports 1 – 6) and the number of pins in each port (e.g., the MSP432P401 has pins 6 – 0 on Port 10). For more details, refer to the datasheet for your specific microcontroller.
+
+Each of the pins on Ports 1 – 6 on the MSP432P401 can be configured as an edge-triggered input. When writing C code using these registers, include the header file for your particular microcontroller (e.g., msp432p401r.h). To use a pin as regular digital input or output, we clear its SEL0 and SEL1 bits. For regular digital input/output, we clear DIR (Direction) bits to make them input, and we set DIR bits to make them output.
+
+To configure an edge-triggered pin, we first configure the pin as a regular digital input. Most busy to done conditions are signified by edges, and therefore we trigger on edges of those signals. Next we write to the IES (Interrupt Edge Select) to define the active edge. We can trigger on the rising or falling edge, as listed in Table 4.4. We clear the IE (Interrupt Enable) bits if we are using busy-wait synchronization, and we set the IE bits to use interrupt synchronization.
+
+
+![Table 4.3](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/bd0e88dce70d02a60cc7901738b1c1f3/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Table4_4.jpg)
+*Table 4.3. MSP432 Port 1 registers. SEL0 SEL1 bits, see Table 2.3. All except PxIV are 8 bits wide.*
+
+The 16-bit P1IV (Interrupt Vector) register specifies a number of the highest priority flag that is set in the P1IFG register. The value is 0x00 if no flag is set. Pin 0 is the highest priority and Pin 7 is the lowest. If pin n is the highest priority flag that is set, then P1IV will be 2*(n+1), meaning it will be one of these values: 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E, or 0x10.
+
+The hardware sets an IFG (Interrupt Flag) bit (called the trigger) and the software clears it (called the acknowledgement). The triggering event listed in Table 4.4 will set the corresponding IFG bit in the P1IFG register regardless of whether or not that bit is allowed to request an interrupt. In other words, clearing an IE bit disables the corresponding pin’s interrupt, but it will still set the corresponding IFG bit when the interrupt would have occurred. To use interrupts, clear the IE bit, configure the bits in Table 4.3, and then set the IE bit. The software can acknowledge the event by writing zeros to the corresponding IFG bit in the P1IFG register. For example, to clear bits 2, 1, and 0 in the P1IFG register, we simply execute
+
+```c
+     P1IFG &= (~0x07);
+```
+
+![Table 4.4](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/26b9179e82b162e21119307e4a49800e/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Table4_4_MSP432.jpg)
+*Table 4.4. Edge-triggered modes.*
+
+For input signals we have the option of adding either a pull-up resistor or a pull-down resistor. If we set the corresponding REN (Resistor Enable) bit on an input pin, we internally connect the equivalent of a 20 – 50 kΩ resistor to the pin. As previously mentioned we choose pull up by setting the corresponding bit in P1OUT to 1. We choose pull down by clearing the corresponding bit in P1OUT to 0.
+
+A typical application of pull-up and pull-down mode is the interface of simple switches. Using these modes eliminates the need for an external resistor when interfacing a switch. The P1.1 and P1.4 interfaces will use software-configured internal resistors. The P1.1 and P1.4 interfaces in Figure 4.13 implement negative logic switch inputs.
+
+
+![Figure 4.13](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/93d2df70ba225f53ac165f0f18ce8aab/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig04_13_MSP432Switch.jpg)
+Figure 4.13. Edge-triggered interfaces can generate interrupts on a switch touch. These negative logic switches require internal pullup resistors.
+
+Using edge triggering to synchronize software to hardware centers around the operation of the trigger flags, IFG. A busy-wait interface will read the appropriate IFG bit over and over, until it is set. When the IFG bit is set, the software will clear the bit by writing a zero to it and perform the desired function. With interrupt synchronization, the initialization phase will arm the trigger flag by setting the corresponding IE bit. In this way, the active edge of the pin will set the IFG and request an interrupt. The interrupt will suspend the main program and run a special interrupt service routine (ISR). This ISR will clear the IFG bit and perform the desired function. At the end of the ISR it will return, causing the main program to resume. In particular, five conditions must be simultaneously true for an edge-triggered interrupt to be requested:
+
+* The trigger flag bit is set (IFG)
+* The arm bit is set (IE)
+* The level of the edge-triggered interrupt must be less than BASEPRI
+* The edge-triggered interrupt must be enabled in the NVIC_ISER1
+* Bit 0 of the special register PRIMASK is 0
+
+In this chapter we will develop blind-cycle and busy-wait solutions, and then in the next chapter we will redesign the systems using interrupt synchronization. Table 4.3 lists the registers for Port 1. The other ports have similar registers. However, only Ports 1 – 6 can request interrupts. We will begin with a simple example that counts the number of falling edges on Port 1 bits 1 and 4 (Program 4.6). The initialization requires many steps. We enable interrupts (EnableInterrupts()) only after all devices are initialized.
+(a) The global variables should be initialized. 
+(b) The appropriate pins must be enabled as inputs. 
+(c) We must specify whether to trigger on the rising or the falling edge. We will trigger on the falling of either P1.1 or P1.4. A falling edges occur when we touch either SW1 or SW2. 
+(d) It is good design to clear the trigger flag during initialization so that the first interrupt occurs due to the first falling edge after the initialization has been run. We do not wish to trigger on a rising edge that might have occurred during the power up phase of the system. 
+(e) We arm the edge-trigger by setting the corresponding bits in the IE register. 
+(f) We establish the priority of Port 1 by setting bits 31 – 29 in the NVIC_IPR8 register. 
+(g) We activate Port 1 interrupts in the NVIC by setting bit 3 in the NVIC_ISER1 register. 
+The proper way to poll the interrupt is to use P1IV. If the software reads P1IV it will get the number (2*(n+1)) where n is the pin number of the lowest bit with a pending interrupt. This access will clear only flag n.
+
+```c
+int32_t SW1,SW2;
+void Switch_Init(void){ 
+  SW1 = SW2 = 0;     // (a) initialize semaphores
+  P1SEL1 &= ~0x12;   // (b) configure P1.1, P1.4 as GPIO
+  P1SEL0 &= ~0x12;   // built-in Buttons 1 and 2
+  P1DIR &= ~0x12;    // make P1.1, P1.4 in 
+  P1REN |= 0x12;     // enable pull resistors 
+  P1OUT |= 0x12;     // P1.1, P1.4 is pull-up
+  P1IES |= 0x12;     // (c) P1.1, P1.4 is falling edge event
+  P1IFG &= ~0x12;    // (d) clear flag1 and flag4 
+  P1IE |= 0x12;      // (e) arm interrupt on P1.1, P1.4
+  NVIC_IPR8 = (NVIC_IPR8&0x00FFFFFF)|0x40000000; // (f) priority 2
+  NVIC_ISER1 = 0x00000008; // (g) enable interrupt 35 in NVIC
+}
+
+void PORT1_IRQHandler(void){ uint8_t status;
+  status = P1IV;     // 4 for P1.1 and 10 for P1.4
+  if(status == 4){
+    OS_Signal(&SW1); // SW1 occurred
+  }
+  if(status == 10){
+    OS_Signal(&SW2); // SW2 occurred
+  }
+}
+```
+
+*Program 4.6. Interrupt-driven edge-triggered input that counts falling edges of P1.4 and P1.1.*
+
+
+--
+--
+
+
+###4.2.3. Debouncing a switch
+
+![Debouncing a switch](https://youtu.be/J0IEQ9wsEyU)
+
+One of the problems with switches is called switch bounce. Many inexpensive switches will mechanically oscillate for up to a few milliseconds when touched or released. It behaves like an underdamped oscillator. These mechanical oscillations cause electrical oscillations such that a port pin will oscillate high/low during the bounce. Contact bounce is a typical problem when interfacing switches. Figure 4.14 shows an actual voltage trace occurring when a negative logic switch is touched. On both a touch and release, there can be from 0 to 2 ms of extra edges, called switch bounce. However, sometimes there is no bounce.
+
+
+![Figure 4.14](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/518ef411535781f76d4f3e9c4a77c886/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig04_14_bouncing.jpg)
+*Figure 4.14. Because of the mass and spring some switches bounce.*
+
+This bounce is a problem when the system uses the switch to trigger important events. There are two problems to solve: 1) remove the bounce so there is one software event attached to the switch touch; 2) remove the bounce in such a way that there is low latency between the physical touch and the execution of the associated software task.
+
+In some cases, this bounce should be removed. To remove switch bounce we can ignore changes in a switch that occur within 10 ms of each other. In other words, recognize a switch transition, disarm interrupts for 10ms, and then rearm after 10 ms.
+
+Alternatively, we could record the time of the switch transition. If the time between this transition and the previous transition is less than 10ms, ignore it. If the time is more than 10 ms, then accept and process the input as a real event.
+
+Another method for debouncing the switch is to use a periodic interrupt with a period greater than the bounce, but less than the time the switch is held down. Each interrupt we read the switch, if the data is different from the previous interrupt the software recognizes the switch event.
+
+
+There are three approaches to debouncing a switch in hardware. 1) if you have a double throw switch (3 wires) you can use a set/reset flip flop; 2) you can use a capacitor and a Schmidt trigger; or 3) you can use a capacitor, diode, and Schmidt trigger. 
+[Jack Ganssle posted a guide to debouncing that shows circuits for these three approaches](http://www.eng.utah.edu/~cs5780/debouncing.pdf).  This is a course on operating systems, so we will show you how to use the OS to debounce the switch.
+
+--
+--
+
+###4.2.4. Debouncing a switch on TM4C123
+
+[Debouncing a switch on TM4C123](https://youtu.be/oxFVakMTDd0)
+
+
+If we have a RTOS we can perform a similar sequence. In particular, we will modify Program 4.5 to signal a semaphore. In order to run the user task immediately on touch we will configure it to trigger an interrupt on both edges. However, there can be multiple falling and rising edges on both a touch and a release, see Figure 4.15. A low priority main thread will wait on that semaphore, sleep for 10ms and then read the switch. The interrupt occurs at the start of the bouncing, but the reading of the switch occurs at a time when the switch state is stable. We will disarm the interrupt during the ISR, so the semaphore is incremented once per touch or once per release. We will rearm the interrupt at the stable time. Program 4.7 shows one possible solution that executes Touch1 when the switch SW1 is touched, and it executes Touch2 when switch SW2 is touched.
+
+The main thread can be low priority because it needs to run before we release the switch. So if the bounce is 3 ms and the time we hold the switch is at least 50 ms (touching the switch slower than 10 times per second), the main thread needs to finish sleeping within 50 ms.
+
+
+![Figure 4.15](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/ab34fce22866e4de1bf8252d70c369dd/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig04_15_debounce.jpg)
+*Figure 4.15. Touch and release both cause the ISR to run. The port is read during the stable time*
+
+```c
+int32_t SW1,SW2;
+uint8_t last1,last2;
+void Switch_Init(void){
+  SYSCTL_RCGCGPIO_R |= 0x20; // activate clock for Port F 
+  OS_InitSemaphore(&SW1,0);  // initialize semaphores
+  OS_InitSemaphore(&SW2,0); 
+  GPIO_PORTF_LOCK_R = 0x4C4F434B; // unlock GPIO Port F
+  GPIO_PORTF_CR_R = 0x1F;         // allow changes to PF4-0
+  GPIO_PORTF_DIR_R &= ~0x11; // make PF4,PF0 in 
+  GPIO_PORTF_DEN_R |= 0x11;  // enable digital I/O on PF4,PF0
+  GPIO_PORTF_PUR_R |= 0x11;  // pullup on PF4,PF0
+  GPIO_PORTF_IS_R &= ~0x11;  // PF4,PF0 are edge-sensitive 
+  GPIO_PORTF_IBE_R |= 0x11;  // PF4,PF0 are both edges 
+  GPIO_PORTF_ICR_R = 0x11;   // clear flags
+  GPIO_PORTF_IM_R |= 0x11;   // arm interrupts on PF4,PF0
+  NVIC_PRI7_R = (NVIC_PRI7_R&0xFF00FFFF)|0x00A00000; // priority 5
+  NVIC_EN0_R = 0x40000000;   // enable interrupt 30 in NVIC
+}
+
+void GPIOPortF_Handler(void){
+  if(GPIO_PORTF_RIS_R&0x10){  // poll PF4
+    GPIO_PORTF_ICR_R = 0x10;  // acknowledge flag4
+    OS_Signal(&SW1);          // signal SW1 occurred
+    GPIO_PORTF_IM_R &= ~0x10; // disarm interrupt on PF4
+  }
+  if(GPIO_PORTF_RIS_R&0x01){  // poll PF0
+    GPIO_PORTF_ICR_R = 0x01;  // acknowledge flag0
+    OS_Signal(&SW2);          // signal SW2 occurred
+    GPIO_PORTF_IM_R &= ~0x81; // disarm interrupt on PF0
+  }
+  OS_Suspend();
+}
+
+void Switch1Task(void){  // high priority main thread
+  last1 = GPIO_PORTF_DATA_R&0x10;
+  while(1){
+    OS_Wait(&SW1);       // wait for SW1 to be touched/released
+    if(last1){           // was previously not touched
+      Touch1();          // user software associated with touch
+    }else{
+      Release1();        // user software associated with release
+    }
+    OS_Sleep(10);        // wait for bouncing to be over
+    last1 = GPIO_PORTF_DATA_R&0x10;
+    GPIO_PORTF_IM_R |= 0x10; // rearm interrupt on PF4
+    GPIO_PORTF_ICR_R = 0x10; // acknowledge flag4
+  }
+}
+
+void Switch2Task(void){  // high priority main thread
+  last2 = GPIO_PORTF_DATA_R&0x01;
+  while(1){
+    OS_Wait(&SW2);      // wait for SW2 to be touched/released
+    if(last2){          // was previously not touched
+      Touch2();         // user software associated with touch
+    }else{
+      Release2();       // user software associated with release
+    }
+    OS_Sleep(10);       // wait for bouncing to be over
+    last2 = GPIO_PORTF_DATA_R&0x01;
+    GPIO_PORTF_IM_R |= 0x01; // rearm interrupt on PF0
+    GPIO_PORTF_ICR_R = 0x01; // acknowledge flag0
+  }
+}
+```
+
+*Program 4.7. Interrupt-driven edge-triggered input that calls Touch1() on the falling edge of PF4, calls Release1() on the rising edge of PF4, calls Touch2() on the falling edge of PF0 and calls Release2() on the rising edge of PF0.*
+
+
+![Figure 4.16](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/42f789f7209662f0ce56c9259e1bac38/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig04_16debounceFlowChart.jpg)
+*Figure 4.16. Flowchart of a RTOS-solution to switch bounce. Switch1Task is a high-priority main thread. Notice that Release1 is executed immediately after a release, and Touch1 is executed immediate after the switch is touched. However the global variable Last is set at a time the switch is guaranteed to be stable.*
+
+--
+--
+
+###4.2.5. Debouncing a switch on MSP432
+
+If we have a RTOS we can perform a similar sequence. In particular, we will use Program 4.8 to signal a semaphore. Even though we armed the interrupt for fall, there can be multiple falling edges on both a touch and a release. A high priority main thread will wait on that semaphore, sleep for 10ms and then read the switch. The interrupt occurs at the start of the bouncing, but the reading of the switch occurs at a time when the switch state is stable. We will disarm the interrupt during the ISR, so the semaphore is incremented once per touch or once per release. We will rearm the interrupt at the stable time. Program 4.8 shows one possible solution that executes Touch1 when the switch SW1 is touched, and it executes Touch2 when switch SW2 is touched.
+
+```c
+int32_t SW1,SW2;
+uint8_t last1,last2;
+void Switch_Init(void){ 
+  SW1 = SW2 = 0;    // initialize semaphores
+  P1SEL1 &= ~0x12;  // configure P1.1, P1.4 as GPIO
+  P1SEL0 &= ~0x12;  // built-in Buttons 1 and 2
+  P1DIR &= ~0x12;   // make P1.1, P1.4 in 
+  P1REN |= 0x12;    // enable pull resistors 
+  P1OUT |= 0x12;    // P1.1, P1.4 is pull-up
+  P1IES |= 0x12;    // P1.1, P1.4 is falling edge event
+  P1IFG &= ~0x12;   // clear flag1 and flag4 
+  P1IE |= 0x12;     // arm interrupt on P1.1, P1.4
+  NVIC_IPR8 = (NVIC_IPR8&0x00FFFFFF)|0x40000000; // (f) priority 2
+  NVIC_ISER1 = 0x00000008; // enable interrupt 35 in NVIC
+}
+
+void PORT1_IRQHandler(void){ uint8_t status;
+  status = P1IV;      // 4 for P1.1 and 10 for P1.4
+  if(status == 4){
+    OS_Signal(&SW1);  // SW1 occurred
+    P1IE &= ~0x02;    // disarm interrupt on P1.2
+  }
+  if(status == 10){
+    OS_Signal(&SW2);  // SW2 occurred
+    P1IE &= ~0x10;    // disarm interrupt on P1.4
+  }
+  OS_Suspend();
+}
+
+void Switch1Task(void){ // high priority main thread
+  last1 = P1IN&0x02;
+  while(1){
+    OS_Wait(&SW1);     // wait for SW1 to be touched/released
+    if(last1){         // was previously not touched
+      Touch1();        // user software associated with touch
+    }else{
+      Release1();      // user software associated with release
+    }
+    OS_Sleep(10);
+    last1 = P1IN&0x02;
+    if(last1){
+      P1IES |= 0x02;   // next will be falling edge 
+    }else{
+      P1IES &= ~0x02;  // next will be rising edge 
+    }
+    P1IE |= 0x02;      // rearm interrupt on P1.1
+    P1IFG &= ~0x02;    // clear flag1
+  }
+}
+
+void SwitchTask2(void){  // high priority main thread
+  last2 = P1IN&0x10;
+  while(1){
+    OS_Wait(&SW2);  // wait for SW2 to be touched/released
+    if(last2){      // was previously not touched
+      Touch2();     // user software associated with touch
+    }else{
+      Release2();   // user software associated with release
+    }
+    OS_Sleep(10);
+    last2 = P1IN&0x10;
+    if(last2){
+      P1IES |= 0x10;  // next will be falling edge 
+    }else{
+      P1IES &= ~0x10; // next will be rising edge 
+    }
+    P1IE |= 0x10;     // rearm interrupt on P1.4
+    P1IFG &= ~0x10;   // clear flag4 
+  }
+}
+```
+
+*Program 4.8. Interrupt-driven edge-triggered input that calls Touch1() on the falling edge of P1.1, calls Release1() on the rising edge of P1.1, calls Touch2() on the falling edge of P1.4 and calls Release2() on the rising edge of P1.4.*
+
+
+![Figure 4.17](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/fdfdcb157e0e915c015af1e5f2aab7ba/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig04_17debounceFlowChart.jpg)
+Figure 4.17. Flowchart of a RTOS-solution to switch bounce. Switch1Task is a high-priority main thread. Notice that Release1 is executed immediately after a release, and Touch1 is executed immediate after the switch is touched. However the global variable Last is set at a time the switch is guaranteed to be stable.
+
+--
+--
+
+###4.3.1. Implementation
+
+[Priority Scheduler](https://youtu.be/7kofkzrd25E)
+
+To implement priority, we add another field to the TCB. In this system we define 0 as the highest priority and 254 as the lowest. In some operating systems, each thread must have unique priority, but in Lab 4 multiple threads can have the same priority. If we have multiple threads with equal priority, these threads will be run in a round robin fashion.
+
+```c
+struct tcb{
+  int32_t *sp;       // pointer to stack (valid for threads not running
+  struct tcb *next;  // linked-list pointer
+  int32_t *BlockPt;  // nonzero if blocked on this semaphore
+  uint32_t Sleep;    // nonzero if this thread is sleeping
+  uint8_t Priority;  // 0 is highest, 254 lowest
+};
+```
+
+*Program 4.9. TCB for the priority scheduler.*
+
+The strategy will be to find the highest priority thread, which is neither blocked nor sleeping and run it as shown in Figure 4.18. If there are multiple threads at that highest priority that are not sleeping nor blocked, then the scheduler will run them in a round robin fashion. The statement, pt = pt->next guarantees that the same higher priority task is not picked again.
+
+
+![Figure 4.18](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/63f5f52b2b95ed5a241f46de9ed90eea/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig04_18_priority.jpg)
+*Figure 4.18. Priority scheduler finds the highest priority thread.*
+
+```c
+void Scheduler(void){ // every time slice
+  uint32_t max = 255; // max
+  tcbType *pt;
+  tcbType *bestPt;
+  pt = RunPt;         // search for highest thread not blocked or sleeping
+  do{
+    pt = pt->next;    // skips at least one
+    if((pt->Priority < max)&&((pt->BlockPt)==0)&&((pt->Sleep)==0)){
+      max = pt->Priority;
+      bestPt = pt;
+    }
+  } while(RunPt != pt); // look at all possible threads
+  RunPt = bestPt; 
+}
+```
+
+*Program 4.10. One possible priority scheduler.*
+
+
+--
+--
+
+###4.3.2. Multi-level Feedback Queue
+
+[Multi-level Feedback Queue, MLFQ](https://youtu.be/Bg5bkTQf_iE)
+*Fun video*
+
+The priority scheduler in the previous section will be inefficient if there are a lot of threads. Because the scheduler must look at all threads, the time to run the scheduler grows linearly with the number of threads. One implementation that is appropriate for priority systems with many threads is called the multi-level feedback queue (MLFQ). MLFQ was introduced in 1962 by Corbato et al. and has since been adopted in some form by all the major operating systems, BSD Unix and variants, Solaris and Windows. Its popularity stems from its ability to optimize performance with respect to two metrics commonly used in traditional Operating Systems. These metrics are turnaround time, and response time. Turnaround time is the time elapsed from when a thread arrives till it completes execution. Response time is the time elapsed from when a thread arrives till it starts execution. Preemptive scheduling mechanisms like Shortest Time-to-Completion First (STCF) and Round-Robin (RR) are optimal at minimizing the average turnaround time and response time respectively. However, both perform well on only one of these metrics and show very poor performance with respect to the other. MLFQ fairs equally well on both these metrics. As the name indicates, MLFQ has multiple queues, one per priority level, with multiple threads operating at the same priority level. In keeping with our description of priority, we assume level 0 is the highest priority and higher levels imply lower priority. There will be a finite number of priority levels from 0 to n-1, see Figure 4.19. The rules that govern the processing of these queues by the scheduler are as follows:
+
+1. Startup: All threads start at the highest priority. Start in queue at level 0.
+1. Highest runs: If Priority(Ti) < Priority(Tj) then Ti is scheduled to run before Tj.
+1. Equals take turns: If Priority(Ti) = Priority(Tj) then Ti and Tj are run in RR order.
+1. True accounting: If a thread uses up its timeslice at priority m then its priority is reduced to m+1. It is moved to the corresponding queue.
+1. Priority Boost: The scheduler does a periodic reset, where all threads are bumped to the highest priority.
+
+![Figure 4.19](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/76986937ca80480ac1972b98bd3f426b/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig04_19_MLFQ.jpg)
+Figure 4.19. The shaded task in this figure begins in the level 0 (highest) priority queue. If it runs to the end of its 10-ms time slice (timeout), it is bumped to level 1. If it again runs to the end of its 10-ms time slice, it is bumped to level 2. Eventually, a thread that does not sleep or block will end up in the lower priority queue. Periodically the system will reset and place all threads back at level 0.
+
+An obvious precondition to choosing a thread is to make sure it is “ready”, that is, it is not blocked on a resource or sleeping. This rule is implicit and hence not listed here. Rules 2, and 3 are self-explanatory as MLFQ attempts to schedule the highest priority ready thread at any time. Rule 1 makes sure that every thread gets a shot at executing as quickly as possible, the first time it enters the system. Rule 4 is what determines when a thread is moved from one level to another. Further, whether a thread uses up its timeslice at one shot or over multiple runs, true accounting requires that the accumulated time for the thread at a given priority level be considered. There are versions of MLFQ that let a thread remain at a priority level with its accrued time towards the timeslice reset to zero, if it blocked on a resource. These versions allowed the possibility of gaming the scheduler. Without rule 5, MLFQ eventually reduces to RR after running for a while with all threads operating at the lowest priority level. By periodically boosting all threads to the highest priority, rule 5 causes a scheduler reset that lets the scheduler adapt to changes in thread behavior.
+
+
+--
+--
+
+
+###4.3.3. Starvation and aging
+
+![Starvation and aging](https://youtu.be/qc9cSJr9JzE)
+
+One disadvantage of a priority scheduler on a busy system is that low priority threads may never be run. This situation is called starvation. For example, if a high priority thread never sleeps or blocks, then the lower priority threads will never run. It is the responsibility of the user to assign priorities to tasks. As mentioned earlier, as processor utilization approaches one, there will not be a solution. In general, starvation is not a problem of the RTOS but rather a result of a poorly designed user code.
+
+One solution to starvation is called aging. In this scheme, threads have a permanent fixed priority and a temporary working priority. The permanent priority is assigned according to the rules of the previous paragraph, but the temporary priority is used to actually schedule threads. Periodically the OS increases the temporary priority of threads that have not been run in a long time. For example, the Age field is incremented once every 1ms if the thread is not blocked or not sleeping. For every 10 ms the thread has not been run, its WorkingPriority is reduced. Once a thread is run, its temporary priority is reset back to its permanent priority. When the thread is run, the Age field is cleared and the FixedPriority is copied into the WorkingPriority.
+
+```c
+struct tcb{ 
+  int32_t *sp;             // pointer to stack (valid for threads not running 
+  struct tcb *next;        // linked-list pointer 
+  int32_t *BlockPt;        // nonzero if blocked on this semaphore 
+  uint32_t Sleep;          // nonzero if this thread is sleeping 
+  uint8_t WorkingPriority; // used by the scheduler 
+  uint8_t FixedPriority;   // permanent priority 
+  uint32_t Age;            // time since last execution 
+};
+```
+
+Program 4.11. TCB for the priority scheduler.
+
+
+--
+--
+
+###4.3.4. Priority inversion and inheritance
+
+[Real example](https://youtu.be/xncT5zNq8GU)
+
+Another problem with a priority scheduler is priority inversion, a condition where a high-priority thread is waiting on a resource owned by a low-priority thread. For example, consider the case where both a high priority and low priority thread need the same resource. Assume the low-priority thread asks for and is granted the resource, and then the high-priority thread asks for it and blocks. During the time the low priority thread is using the resource, the high-priority thread essentially becomes low priority. The scenario in Figure 4.20 begins with a low priority meteorological task asking for and being granted access to a shared memory using the mutex semaphore. The second step is a medium priority communication task runs for a long time. Since communication is higher priority than the meteorological task, the communication task runs but the meteorological task does not run. Third, a very high priority task starts but also needs access to the shared memory, so it calls wait on mutex. This high priority task, however, will block because mutex is 0. Notice that while the communication task is running, this high priority task effectively runs at low priority because it is blocked on a semaphore captured previously by the low priority task.
+
+
+![Figure 4.20](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/0f854ece397687956320e447be23eadd/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig04_20_priorityinversion.jpg)
+*Figure 4.20. Priority inversion as occurred with Mars Pathfinder.*
+
+http://research.microsoft.com/en-us/um/people/mbj/Mars_Pathfinder/Mars_Pathfinder.html
+
+One solution to priority inversion is priority inheritance. With priority inheritance, once a high-priority thread blocks on a resource, the thread holding that resource is granted a temporary priority equal to the priority of the high-priority blocked thread. Once the thread releases the resource, its priority is returned to its original value.
+
+A second approach is called priority ceiling. In this protocol each semaphore is assigned a priority ceiling, which is a priority equal to the highest priority of any task which may block on a semaphore for that resource. With priority ceiling, once a high-priority thread blocks on a resource, the thread holding that resource is granted a temporary priority equal to the priority of the priority ceiling. Just like inheritance, once the thread releases the resource, its priority is returned to its original value.
+
+Note: none of the labs in this class will require you to implement aging or priority inheritance. We introduce the concepts of priority inheritance because it is a feature available in most commercial priority schedulers.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
