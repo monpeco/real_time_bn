@@ -763,6 +763,156 @@ A second approach is called priority ceiling. In this protocol each semaphore is
 
 Note: none of the labs in this class will require you to implement aging or priority inheritance. We introduce the concepts of priority inheritance because it is a feature available in most commercial priority schedulers.
 
+--
+--
+
+### 4.4.1 High priority threads
+[High priority main thread](https://youtu.be/saXumdQfteQ)
+
+In Labs 2 and 3, we ran time-critical tasks (event tasks) directly from the interrupt service routine. Now that we have a priority scheduler, we can place time-critical tasks as high priority main threads. We will block these time-critical tasks waiting on an event (semaphore), and when the event occurs we signal its semaphore. Because we now have a high priority thread not blocked, the scheduler will run it immediately. In Program 4.12, we have a periodic interrupt that simply signals a semaphore and invokes the scheduler. If we assign the program Task0 as a high priority main thread, it will be run periodically with very little jitter.
+
+It may seem like a lot of trouble to run a periodic task. One might ask why not just put the time-critical task in the interrupt service routine. A priority scheduler is flexible in two ways. First, because it implements priority we can have layers of important, very important and very very important tasks. Second, we can use this approach for any triggering event, hardware or software. We simply make that triggering event call OS_Signal and OS_Suspend. One of the advantages of this approach is the separation of the user/application code from the OS code. The OS simply signals the semaphore on the appropriate event and the user code runs as a main thread.
+
+```c
+int32_t TakeSoundData; // binary semaphore
+void RealTimeEvents(void){
+  OS_Signal(&TakeSoundData);
+  OS_Suspend();
+}
+
+void Task0(void){
+  while(1){
+    OS_Wait(&TakeSoundData); // signaled every 1ms
+    TExaS_Task0();           // toggle virtual logic analyzer
+    Profile_Toggle0();       // viewed by the logic analyzer to know Task0 started
+// time-critical software
+  }
+}
+
+int main(void){
+  OS_Init();
+// other initialization
+  OS_InitSemaphore(&TakeSoundData,0);
+  OS_AddThreads(&Task0,0,&Task1,1,&Task2,2, &Task3,3, 
+      &Task4,3, &Task5,3, &Task6,3, &Task7,4);
+  BSP_PeriodicTask_InitC(&RealTimeEvents,1000,0);
+  TExaS_Init(LOGICANALYZER, 1000);           // initialize the logic analyzer
+  OS_Launch(BSP_Clock_GetFreq()/THREADFREQ); // doesn't return
+  return 0; // this never executes
+}
+```
+
+*Program 4.12. Running time-critical tasks as high priority event threads.*
+
+--
+--
+
+###4.5.1. Micrium uC/OS-II
+
+We introduced several concepts that common in real-time operating systems but ones we don’t implement in our simple RTOS. To complete this discussion, we explore some of the popular RTOSs (for the ARM Cortex-M) in commercial use and how they implement some of the features we covered.
+
+Micrium μC/OS-II is a portable, ROMable, scalable, preemptive, real-time deterministic multitasking kernel for microprocessors, microcontrollers and DSPs (for more information, see http://micrium.com/rtos/ucosii/overview/). Portable means user and OS code written on one processor can be easily shifted to another processor. ROMable is a standard feature of most compilers for embedded systems, meaning object code is programmed into ROM, and variables are positioned in RAM. Scalable means applications can be developed on this OS for 10 threads, but the OS allows expansion to 255 threads. Like most real-time operating systems, high priority tasks can preempt lower priority tasks. Because each thread in Micrium μC/OS-II has a unique priority (no two threads have equal priority), the threads will run in a deterministic pattern, making it easy to certify performance. In fact, the following lists the certifications available for Micrium μC/OS-II
+
+* MISRA-C:1998
+* DO178B Level A and EUROCAE ED-12B
+* Medical FDA pre-market notification (510(k)) and pre-market approval (PMA)
+* SIL3/SIL4 IEC for transportation and nuclear systems
+* IEC-61508
+
+As of September 2014, Micrium μC/OS-II is available for 51 processor architectures, including the Cortex M3 and Cortex M4F. Ports are available for download on http://micrium.com. Micrium μC/OS-II manages up to 255 application tasks. μC/OS-II includes: semaphores; event flags; mutual-exclusion semaphores that eliminate unbounded priority inversions; message mailboxes and queues; task, time and timer management; and fixed sized memory block management.
+
+Micrium μC/OS-II’s footprint can be scaled (between 5 kibibytes to 24 kibibytes) to only contain the features required for a specific application. The execution time for most services provided by μC/OS-II is both constant and deterministic; execution times do not depend on the number of tasks running in the application. To provide for stability and protection, this OS runs user code with the PSP and OS code with the MSP. The way in which the Micrium μC/OS supports many processor architectures is to be layered. Only a small piece of the OS code is processor specific. It also provides a Board Support Package (BSP) so the user code can also be layered, see Figure 4.21.
+
+
+![Figure 4.21](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/65bc8676e3724faa854407e6b79c478c/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig04_21uCOS_II.jpg)
+Figure 4.21. Block diagram of the Micrium uC/OSII.
+
+To illustrate the operation of Micrium μC/OS-II, Program 4.25 shows the thread-switch code. PendSV is an effective method for performing context switches with Cortex-M because the Cortex-M saves R0-R3,R12,LR,PC,PSW on any exception, and restores the same on return from exception. So only saving of R4-R11 is required and fixing up the stack pointers. Using the PendSV exception this way means that context saving and restoring is identical whether it is initiated from a thread or occurs due to an interrupt or exception. On entry into PendSV handler 1) xPSR, PC, LR, R12, R0-R3 have been saved on the process stack (by the processor); 2) Processor mode is switched to Handler mode (from Thread mode); 3) The stack is now the Main stack (switched from Process stack); 3) OSTCBCur points to the OS_TCB of the task to suspend; and 4) OSTCBHighRdy points to the OS_TCB of the task to resume. There nine steps for switching a thread:
+
+1. Get the process SP, if 0 then go to step 4. the saving part (first switch);
+1. Save remaining regs R4-R11 on process stack;
+1. Save the process SP in its TCB, OSTCBCur->OSTCBStkPtr = SP;
+1. Call OSTaskSwHook();
+1. Get current high priority, OSPrioCur = OSPrioHighRdy;
+1. Get current ready thread TCB, OSTCBCur = OSTCBHighRdy;
+1. Get new process SP from TCB, SP = OSTCBHighRdy->OSTCBStkPtr;
+1. Restore R4-R11 from new process stack;
+1. Perform exception return which will restore remaining context.
+
+```asm
+OS_CPU_PendSVHandler
+    CPSID   I               ; Prevent interruption during context switch
+    MRS     R0, PSP         ; PSP is process stack pointer
+    CBZ     R0, OS_CPU_PendSVHandler_nosave       ; Skip first time
+
+    SUBS    R0, R0, #0x20   ; Save remaining regs R4-11 on process stack
+    STM     R0, {R4-R11}
+
+    LDR     R1, =OSTCBCur   ; OSTCBCur->OSTCBStkPtr = SP;
+    LDR     R1, [R1]
+    STR     R0, [R1]        ; R0 is SP of process being switched out
+
+; At this point, entire context of process has been saved
+OS_CPU_PendSVHandler_nosave
+    PUSH    {R14}             ; Save LR exc_return value
+    LDR     R0, =OSTaskSwHook ; OSTaskSwHook();
+    BLX     R0
+    POP     {R14}
+
+    LDR     R0, =OSPrioCur  ; OSPrioCur = OSPrioHighRdy;
+    LDR     R1, =OSPrioHighRdy
+    LDRB    R2, [R1]
+    STRB    R2, [R0]
+
+    LDR     R0, =OSTCBCur   ; OSTCBCur  = OSTCBHighRdy;
+    LDR     R1, =OSTCBHighRdy
+    LDR     R2, [R1]
+    STR     R2, [R0]
+
+    LDR     R0, [R2]  ; R0 is new PSP; SP = OSTCBHighRdy->OSTCBStkPtr;
+    LDM     R0, {R4-R11}    ; Restore R4-11 from new process stack
+    ADDS    R0, R0, #0x20
+    MSR     PSP, R0         ; Load PSP with new process SP
+    ORR     LR, LR, #0x04   ; Ensure exception return uses process stack
+    CPSIE   I
+    BX      LR          ; Exception return will restore remaining context
+```
+
+Program 4.25. Thread switch code on the Micrium uC/OSII (The thread switching software in this course were derived from this OS).
+
+Since PendSV is set to lowest priority in the system, we know that it will only be run when no other exception or interrupt is active, and therefore safe to assume that context being switched out was using the process stack (PSP). Micrium μC/OS-II provides numerous hooks within the OS to support debugging, profiling, and feature expansion. An example of a hook is the call to OSTaskSwHook(). The user can specify the action invoked by this call. Micrium µC/OS-III extends this OS with many features as more threads, round-robin scheduling, enhanced messaging, extensive performance measurements, and time stamps.
+
+--
+--
+
+###4.5.2. Texas Instruments RTOS
+
+TI-RTOS scales from a real-time multitasking kernel to a complete RTOS solution including additional middleware components and device drivers. TI-RTOS is provided with full source code and requires no up-front or runtime license fees. TI-RTOS Kernel is available on most TI microprocessors, microcontrollers and DSPs. TI-RTOS middleware, drivers and board initialization components are available on select ARM® Cortex™-M4 Tiva-C, C2000™ dual core C28x + ARM Cortex-M3, MSP430 microcontrollers, and the SimpleLink™ WiFi® CC3200. For more information, see http://www.ti.com/tool/ti-rtos or search RTOS on www.ti.com. TI-RTOS combines a real-time multitasking kernel with additional middleware components including TCP/IP and USB stacks, a FAT file system, and device drivers, see Figure 4.22 and Table 4.5. TI-RTOS provides a consistent embedded software platform across TI’s microcontroller devices, making it easy to port legacy applications to the latest devices.
+
+
+![Figure 4.22](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/a2b3bb3cb80eaeeea8f277f7a8744580/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig04_22_TI_RTOS.jpg)
+Figure 4.22. Block diagram of the Texas Instruments RTOS.
+
+| TI-RTOS Module	| Description |
+|-----------------|-------------|
+| TI-RTOS Kernel	| TI-RTOS Kernel provides deterministic preemptive multithreading and synchronization services, memory management, and interrupt handling. TI-RTOS Kernel is highly scalable down to a few KBs of memory. |
+| TI-RTOS Networking	| TI-RTOS Networking provides an IPv4 and IPv6-compliant TCP/IP stack along with associated network applications such as DNS, HTTP, and DHCP. |
+| TI-RTOS File System	| TI-RTOS File System is a FAT-compatible file system based on the open source Fatfs product. |
+| TI-RTOS USB	| TI-RTOS USB provides both USB Host and Device stacks, as well as MSC, CDC, and HID class drivers. TI-RTOS USB uses the proven TivaWare USB stack. |
+| TI-RTOS IPC	| The TI-RTOS IPC provides efficient interprocessor communication in multicore devices. |
+| TI-RTOS Instrumentation	| TI-RTOS Instrumentation allows developers to include debug instrumentation in their application that enables run-time behavior, including context-switching, to be displayed by system-level analysis tools. |
+| TI-RTOS Drivers and Board Initialization	| TI-RTOS Drivers and Board Initialization provides a set of device driver APIs, such as Ethernet, UART and IIC, that are standard across all devices, as well as initialization code for all supported boards. All driver and board initialization APIs are built on the TivaWare, MWare, or MSP430Ware libraries. |
+Table 4.5 Components of the TI RTOS.
+
+
+
+
+
+
+
+
+
+
 
 
 
