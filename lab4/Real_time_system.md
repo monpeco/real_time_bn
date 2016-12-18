@@ -565,7 +565,8 @@ void Switch2Task(void){  // high priority main thread
 
 ###4.2.5. Debouncing a switch on MSP432
 
-If we have a RTOS we can perform a similar sequence. In particular, we will use Program 4.8 to signal a semaphore. Even though we armed the interrupt for fall, there can be multiple falling edges on both a touch and a release. A high priority main thread will wait on that semaphore, sleep for 10ms and then read the switch. The interrupt occurs at the start of the bouncing, but the reading of the switch occurs at a time when the switch state is stable. We will disarm the interrupt during the ISR, so the semaphore is incremented once per touch or once per release. We will rearm the interrupt at the stable time. Program 4.8 shows one possible solution that executes Touch1 when the switch SW1 is touched, and it executes Touch2 when switch SW2 is touched.
+If we have a RTOS we can perform a similar sequence. In particular, we will use Program 4.8 to signal a semaphore. Even though we armed the 
+interrupt for fall, there can be multiple falling edges on both a touch and a release. A high priority main thread will wait on that semaphore, sleep for 10ms and then read the switch. The interrupt occurs at the start of the bouncing, but the reading of the switch occurs at a time when the switch state is stable. We will disarm the interrupt during the ISR, so the semaphore is incremented once per touch or once per release. We will rearm the interrupt at the stable time. Program 4.8 shows one possible solution that executes Touch1 when the switch SW1 is touched, and it executes Touch2 when switch SW2 is touched.
 
 ```c
 int32_t SW1,SW2;
@@ -902,12 +903,113 @@ Figure 4.22. Block diagram of the Texas Instruments RTOS.
 | TI-RTOS IPC	| The TI-RTOS IPC provides efficient interprocessor communication in multicore devices. |
 | TI-RTOS Instrumentation	| TI-RTOS Instrumentation allows developers to include debug instrumentation in their application that enables run-time behavior, including context-switching, to be displayed by system-level analysis tools. |
 | TI-RTOS Drivers and Board Initialization	| TI-RTOS Drivers and Board Initialization provides a set of device driver APIs, such as Ethernet, UART and IIC, that are standard across all devices, as well as initialization code for all supported boards. All driver and board initialization APIs are built on the TivaWare, MWare, or MSP430Ware libraries. |
-Table 4.5 Components of the TI RTOS.
+*Table 4.5 Components of the TI RTOS.*
+
+--
+--
+
+###4.5.3. ARM RTX Real-Time Operating System
+
+The Keil RTX is a royalty-free, deterministic Real-Time Operating System designed for ARM and Cortex-M devices. For more information, search RTX RTOS on www.arm.com. It allows you to create programs that simultaneously perform multiple functions and helps to create applications which are better structured and more easily maintained. RTX is available royalty-free and includes source code. RTX is deterministic. It has flexible scheduling including round-robin, pre-emptive, and collaborative. It operates at high speed with low interrupt latency. It has a small footprint. It supports unlimited number of tasks each with 254 priority levels. It provides an unlimited number of mailboxes, semaphores, mutex, and timers. It includes support for multithreading and thread-safe operation. There is debugging support in MDK-ARM. It has a dialog-based setup using µVision Configuration Wizard. RTX allows up to 250 active tasks. The priority scheduler supports up to 254 priority levels. The OS will dynamically check for valid stacks for running tasks. It implements timeouts, interval timing, and user timers. Synchronization and inter-task communication are handled by signals/events, semaphores, mutexes, and mailboxes. A task switch, the Cortex M3 version shown as Program 4.26, requires 192 bus cycles. The STMDB instruction saves the current thread and the LDMIA instruction restores the context for the next thread.
+
+```asm
+__asm void PendSV_Handler (void) {
+        BL      __cpp(rt_pop_req)   ; choose next thread to run
+        LDR     R3,=__cpp(&os_tsk)
+        LDM     R3,{R1,R2}              ; os_tsk.run, os_tsk.new
+        CMP     R1,R2
+        BEQ     Sys_Exit
+        PUSH    {R2,R3}
+        MOV     R3,#0
+        STRB    R3,[R1,#TCB_RETUPD]     ; os_tsk.run->ret_upd = 0
+        MRS     R12,PSP                 ; Read PSP
+        STMDB   R12!,{R4-R11}           ; Save Old context
+        STR     R12,[R1,#TCB_TSTACK]    ; Update os_tsk.run->tsk_stack
+        BL      rt_stk_check            ; Check for Stack overflow
+        POP     {R2,R3}
+        STR     R2,[R3]                 ; os_tsk.run = os_tsk.new
+        LDR     R12,[R2,#TCB_TSTACK]    ; os_tsk.new->tsk_stack
+        LDMIA   R12!,{R4-R11}           ; Restore New Context
+        MSR     PSP,R12                 ; Write PSP
+        LDRB    R3,[R2,#TCB_RETUPD]     ; Update ret_val?
+        CBZ     R3,Sys_Exit
+        LDRB    R3,[R2,#TCB_RETVAL]     ; Write os_tsk.new->ret_val
+        STR     R3,[R12]
+Sys_Exit MVN    LR,#:NOT:0xFFFFFFFD     ; set EXC_RETURN value
+        BX      LR                      ; Return to Thread Mode
+}
+```
+
+*Program 4.26. Thread switch code on the ARM RTX RTOS (see file HAL_CM3.c).*
+
+ARM's Cortex Microcontroller Software Interface Standard (CMSIS) is a standardized hardware abstraction layer for the Cortex-M processor series. The CMSIS-RTOS API is a generic RTOS interface for Cortex-M processor-based devices. You will find details of this standard as part of the Keil installation at Keil\ARM\CMSIS\Documentation\RTOS\html. CMSIS-RTOS provides a standardized API for software components that require RTOS functionality and gives therefore serious benefits to the users and the software industry.
+
+* CMSIS-RTOS provides basic features that are required in many applications or technologies such as UML or Java (JVM).
+* The unified feature set of the CMSIS-RTOS API simplifies sharing of software components and reduces learning efforts.
+* Middleware components that use the CMSIS-RTOS API are RTOS agnostic. CMSIS-RTOS compliant middleware is easier to adapt.
+* Standard project templates (such as motor control) of the CMSIS-RTOS API may be shipped with freely available CMSIS-RTOS implementations.
+
+--
+--
+
+###4.5.4. FreeRTOS
+
+FreeRTOS is a class of RTOS that is designed to be small enough to run on a microcontroller. FreeRTOS only provides the core real-time scheduling functionality, inter-task communication, timing and synchronization primitives. This means it is more accurately described as a real-time kernel, or real-time executive. FreeRTOS is available for 35 processor architectures, with millions of product deployments. For more information on FreeRTOS, see their web site at http://www.freertos.org/RTOS-Cortex-M3-M4.html. The starter project for the LM3S811 can be easily recompiled to run an any of the Texas Instruments Cortex M microcontrollers.
+
+FreeRTOS is licensed under a modified GPL and can be used in commercial applications under this license without any requirement to expose your proprietary source code. An alternative commercial license option is also available in cases that: You wish to receive direct technical support. You wish to have assistance with your development. You require legal protection or other assurances. Program 4.27 shows the PendSV handler that implements the context switch. Notice that this thread switch does not disable interrupts. Rather, the ISB instruction acts as an instruction synchronization barrier. It flushes the pipeline of the processor, so that all instructions following the ISB are fetched from cache or memory again, after the ISB instruction has been completed. Similar to Micrium μC/OS-II and ARM RTX, the FreeRTOS does run user threads with the process stack pointer (PSP).
+
+```asm
+__asm void xPortPendSVHandler( void ){
+    extern uxCriticalNesting;
+    extern pxCurrentTCB;
+    extern vTaskSwitchContext;
+    PRESERVE8
+    mrs r0, psp
+    isb
+    ldr    r3, =pxCurrentTCB    /* Get the location of current TCB. */
+    ldr    r2, [r3]
+    stmdb r0!, {r4-r11}    /* Save the remaining registers. */
+    str r0, [r2]    /* Save the new top of stack into the TCB. */
+    stmdb sp!, {r3, r14}
+    mov r0, #configMAX_SYSCALL_INTERRUPT_PRIORITY
+    msr basepri, r0
+    bl vTaskSwitchContext
+    mov r0, #0
+    msr basepri, r0
+    ldmia sp!, {r3, r14}
+    ldr r1, [r3]
+    ldr r0, [r1] /* first item in pxCurrentTCB is task top of stack. */
+    ldmia r0!, {r4-r11} /* Pop registers and critical nesting count. */
+    msr psp, r0
+    isb
+    bx r14
+    nop
+}
+```
+
+*Program 4.27. Thread switch code on FreeRTOS also uses PendSV for the Cortex M3.*
+
+--
+--
+
+###4.5.5. Other Real Time Operating Systems
 
 
+Other real time operating systems available for the Cortex M are listed in Table 4.6
 
+| Provider	| Product |
+|-----------|---------|
+| CMX Systems	| CMX-RTX,CMX-Tiny |
+| Expresslogic	| ThreadX |
+| Green Hills	| Integrity®, µVelOSity |
+| Mentor Graphics	| Nucleus+® |
+| Micro Digital	| SMX® |
+| RoweBots	| Unison |
+| SEGGER	| embOS |
 
+*Table 4.6 Other RTOS for the Cortex M (http://www.ti.com/lsds/ti/tools-software/rtos.page#arm)*
 
+Deployed in over 1.5 billion devices, VxWorks® by Wind River® is the world’s leading real-time operating system (RTOS). It is listed here in the other category because it is deployed on such architectures as the X86, ARM Cortex-A series, and Freescale QorIQ, but not on the Cortex M microcontrollers like the TM4C123. VxWorks delivers hard real-time performance, determinism, and low latency along with the scalability, security, and safety required for aerospace and defense, industrial, medical, automotive, consumer electronics, networking, and other industries. VxWorks has become the RTOS of choice when certification is required. VxWorks supports the space, time, and resource partitioning required for IEC 62304, IEC 61508, IEC 50128, DO-178C, and ARINC 653 certification. VxWorks customers can design their systems to the required level of security by picking from a comprehensive set of VxWorks security features. VxWorks is an important play in providing solutions for the Internet of Things (IoT), where connectivity, scalability, and security are required. For more information see http://www.windriver.com/products/vxworks/
 
 
 
