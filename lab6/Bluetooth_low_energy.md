@@ -175,6 +175,8 @@ Figure 6.12 illustrated the inverted F shape of the 2.4 GHz antenna used on the 
 --
 --
 
+###CC2650 Solutions
+
 ###Introduction
 
 [Introduction](https://youtu.be/SIH0b97UniY)
@@ -327,12 +329,49 @@ Figure 6.24 shows a CC2650 module, which could be used in a Bluetooth enabled de
 --
 --
 
+###6.4. Network Processor Interface
 
+###6.4.1. Overview
 
+[Overview](https://youtu.be/Jr_DLcP2usI)
 
+Simple Network Processor (SNP) is TI’s name for the application that runs on the CC2650 when using the CC2650 with another microcontroller such as the MSP432 or TM4C123. In this configuration the controller and host are implemented together on the CC2650, while the profiles and application are implemented on an external MCU. The application and profiles communicate with the CC2650 via the Application Programming Interface (API) that simplifies the management of the BLE network processor. The SNP API communicates with the BLE device using the Network Protocol Interface (NPI) over a serial (SPI or UART) connection. In this chapter, we will use a UART interface as shown in Figure 6.25. This configuration is useful for applications that wish to add Bluetooth functionality to an existing device. In this paradigm, the application runs on the existing microcontroller, and BLE runs on the CC2650. For a description of the Simple Network Processor, refer to
 
+* SNP http://processors.wiki.ti.com/index.php/CC2640_BLE_Network_Processor
+* Developer guide http://www.ti.com/lit/ug/swru393c/swru393c.pdf 
+* TI wiki page http://processors.wiki.ti.com/index.php/NPI
 
+In this chapter, our TM4C123/MSP432 LaunchPad will be the application processor (AP) and the CC2650 will be the network processor (NP). There are 7 wires between the AP and the NP. Two wires are power and ground, one wire is a negative logic reset, two wires are handshake lines, and two wires are UART transmit and receive.
 
+![](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/939ef529afdfc2e48d7b7d59349cca47/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_25_NPIcircuit.jpg)
+*Figure 6.25. Hardware interface between the LaunchPad AP and the CC2650 NP.*
+
+To initialize Bluetooth, the master (AP) first resets the slave (NP). The reset line is a GPIO output of the AP and is the hardware reset line on the NP. There are two handshake lines: master ready and slave ready. Master ready (MRDY) is a GPIO output of the AP and a GPIO input to the NP. Slave ready (SRDY) is a GPIO output of the NP and a GPIO input of the AP. If the AP wishes to reset the NP, it sets MRDY high and pulses reset low for 10 ms, Figure 6.26. Normally, the reset operation occurs once, and thereafter the reset line should remain high.
+
+![](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/52f7b6a3b8b3792e4b89112d917efc2a/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_26_NPI_reset.jpg)
+*Figure 6.26. The LaunchPad AP can reset the CC2650 NP.*
+
+There are two types of communication. Messages can be sent from master to slave, or from slave to master. If the master (AP) wishes to send a message to the slave (NP), it follows 5 steps, Figure 6.27. First, the master sets MRDY low (Master: “I wish to send”). Second, the slave responds with SRDY low (Slave: “ok, I am ready”). The communication is handshaked because the master will wait for SRDY to go low. Third, the master will transmit a message on its UART output (Rx input to slave). The format of this message will be described later. Fourth, after the message has been sent, the master pulls MRDY high (Master: “I am done”). Fifth, the slave pulls its SRDY high (Slave: “ok”). Again, the handshaking requires the master to wait for SRDY to go high.
+
+![Figure 6.27](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/8ff57c49fffd139c42903df983eeec63/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_27_NPI_mastrSendhandshake.jpg)
+*Figure 6.27. The LaunchPad AP can send a message to the CC2650 NP. Handshake means the steps 1 – 5 always occur in this sequence.*
+
+If the slave (NP) wishes to send a message to the master (AP), there are also 5 steps, Figure 6.28. First, the slave sets SRDY low (Slave: “I wish to send”). Second, the master responds with MRDY low (Master: “ok, I am ready”). You will notice in the example projects that the master will periodically check to see if the SRDY line has gone low, and if so it will receive a message. Third, the slave will transmit a message on its UART output (Tx output from slave). The format of this message will be the same for all messages. Fourth, after the message has been sent, the slave pulls SRDY high (Slave: “I am done”). The master will wait for SRDY to go high. Fifth, the master pulls its MRDY high (Master: “ok”).
+
+![Figure 6.28](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/699252ea39d3d88222e7e616a69de90d/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_28_NPI_slaveSendhandshake.jpg)
+*Figure 6.28. The CC2650 NP can send a message to the LaunchPad AP. Handshake means the steps 1 – 5 always occur in this sequence.*
+
+The format of the message is shown in Figure 6.29. The boxes in the figure represent UART frames. Each UART frame contains 1 start bit, 8 data bits, and 1 stop bit, sent at 115,200 bits/sec. All messages begin with a start of frame (SOF), which is a 254 (0xFE). The next two bytes are the payload length in little endian format. Since all the payloads in this chapter are less than 256 bytes, the second byte is the length, L, and the third byte is 0. The fourth and fifth bytes are the command. Most commands have a payload, which contains the parameters of the command. Some commands do not have a payload. All messages end with a frame check sequence (FCS). The FCS is the 8-bit exclusive or of all the data, not including the SOF and the FCS itself.
+
+![Figure 6.29](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/a8c4e1334d06e6f9633dc794391728c5/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_29_NPI_messageformat.jpg)
+*Figure 6.29. The format of an NPI message.*
+
+The following steps occur in this order
+
+1. Initialize GATT (add services, characteristics, CCCD's);
+2. Initialize GAP (advertisement data, connection parameters);
+3. Advertise and optionally wait for a connection; 
+4. Respond to GATT requests and send notifications / indications as desired.
 
 
 
