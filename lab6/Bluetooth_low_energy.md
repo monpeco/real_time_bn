@@ -171,3 +171,171 @@ Figure 6.12 illustrated the inverted F shape of the 2.4 GHz antenna used on the 
 
 ![](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/9e9604d681a3ecf2659c954253049869/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_12_invertedF_antenna.jpg)
 *Figure 6.12. One possible layout of the 2.4 GHz antenna.*
+
+--
+--
+
+###Introduction
+
+[Introduction](https://youtu.be/SIH0b97UniY)
+
+Bluetooth is wireless medium and a data protocol that connects devices together over a short distance. Examples of Bluetooth connectivity include headset to phone, speaker to computer, and fitness device to phone/computer. Bluetooth is an important component of billions of products on the market today. Bluetooth operates from 1 to 100 meters, depending on the strength of the radio. Most Bluetooth devices operate up to a maximum of 10 meters. However, in order to improve battery life, many devices reduce the strength of the radio, and therefore save power by operating across distances shorter than 10 meters. If the computer or phone provides a bridge to the internet, a Bluetooth-connected device becomes part of the Internet of Things (IoT).
+
+Bluetooth is classified as a personal area network (PAN) because it implements communication within the range of an individual person. Alternatively, devices within a Bluetooth network are usually owned or controlled by one person. When two devices on the network are connected, we often say the devices are paired.
+
+At the highest level, we see Bluetooth devices implement profiles. A profile is a suite of functionalities that support a certain type of communication. See https://en.wikipedia.org/wiki/List_of_Bluetooth_profiles. For example, the Advanced Audio Distribution Profile (A2DP) can be used to stream data. The Health Device Profile (HDP) is a standard profile for medical devices. There are profiles for remote controls, images, printers, cordless telephones, health devices, hands free devices, and intercoms. The profile we will use in this chapter is the generic attribute protocol (GATT). Within the GATT there can be once or more services. Table 6.2 shows some of the services that have been developed.
+
+![Table 6.2](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/1e9839a91bb34605243267cc9f9a3da2/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/table6_2.jpg)
+*Table 6.2. Adopted GATT services, https://www.bluetooth.com/specifications/gatt/services*
+
+Within a service there may be one or more characteristics. A characteristic is user or application data that is transmitted from one device to another across the network. One of the attributes of a characteristic is whether it is readable, writeable, or both. We will use the notify indication to stream data from the embedded object to the smart phone. Characteristics have a universally unique identifier (UUID), which is a 128-bit (16-byte) number that is unique. BLE can use either 16-bit or 32-bit UUIDs. A specific UUID is used within the network to identify a specific characteristic. Often a characteristic has one or more descriptors. Descriptors may be information like its name and its units. We will also see handles, which are a mechanism to identify characteristics within the device. A handle is a pointer to an internal data structure within the GATT that contains all the information about that characteristic. Handles are not passed across the Bluetooth network; rather, handles are used by the host and controller to keep track of characteristics. UUIDs are passed across the network. Figure 6.13 shows a GATT service with seven characteristics.
+
+![](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/4a249ac17964a21bf54d26daf05b2788/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_13_GATTservice.jpg)
+*Figure 6.13. A GATT profile implements services, and a service has one or more characteristics.*
+
+--
+--
+
+###6.2.1. Bluetooth Protocol Stack
+
+[Bluetooth Protocol Stack](https://youtu.be/uwk3gKY9DfA)
+
+The BLE protocol stack includes a controller and a host, as shown in Figure 6.14. Bluetooth BR (basic rate), Bluetooth EDR (enhanced data rate), and Bluetooth LE (low energy) all separate the controller and host as different layers and are often implemented separately. The user application and operating system sit on top of the host layer. This section is a brief overview of BLE. For more information on HCI, www.ti.com/ble-wiki and www.ti.com/ble-stack.
+
+![](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/842adf807b71b6926c296346dd5ee2f0/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_14_BLEstack.jpg)
+*Figure 6.14. The BLE stack. These layers are implemented inside the CC2650. The physical layer includes the antenna, which is outside the CC2650.*
+
+The physical layer (PHY) is a 1Mbps adaptive frequency-hopping GFSK (Gaussian Frequency-Shift Keying) radio operating in the unlicensed 2.4 GHz ISM (Industrial, Scientific, and Medical) band.
+
+The link layer (LL) controls the radiofrequency state of the device. The device can be in one of five states: standby, advertising, scanning, initiating, or connected. Advertisers transmit data without being in a connection, while scanners listen for advertisers. An Initiator is a device that is responding to an Advertiser with a connection request. If the Advertiser accepts, both the advertiser and initiator will enter a connected state. When a device is in a connection, it will be connected in one of two roles master or slave. The device that initiated the connection becomes the master, and the device that accepted the request becomes the slave. In Lab 6, the embedded system will be an advertiser and the smart phone will be the initiator.
+
+The host control interface (HCI) layer provides a means of communication between the host and controller via a standardized interface. Standard HCI commands and events are specified in the Bluetooth Core Spec. The HCI layer is a thin layer which transports commands and events between the host and controller. In Lab 6, the HCI is implemented has function calls and callbacks within the CC2650 controller.
+
+The link logical control and adaption protocol (L2CAP) layer provides data encapsulation services to the upper layers, allowing for logical end-to-end communication of data. The security manager (SM) layer defines the methods for pairing and key distribution, and provides functions for the other layers of the protocol stack to securely connect and exchange data with another device. The generic access protocol (GAP) layer handles the connection and security. In Lab 6, you will configure the GAP to setup and initiate advertisement. We will use the GAP to connect our embedded system to a smart phone.
+
+The overriding theme of Bluetooth communication is the exchange of data between paired devices. A service is a mechanism to exchange data. A collection of services is a profile. The generic attribute profile (GATT) handles services and profiles. The attribute protocol (ATT) layer protocol allows a device to expose “attributes” to other devices. All data communications that occur between two devices in a BLE connection are handled through the GATT.
+
+The first step for our embedded device to perform is to configure and start advertisement, see Figure 6.15. In advertisement mode the device sends out periodic notifications of its existence and its willingness to connect. Another device, such as a smart phone, scans the area for possible devices. If desired this device can request a connection. If the advertiser accepts, both devices enter a connected phase, where the embedded device will be the slave (server) and the initiator becomes the master (client).
+
+![](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/7d7c6306d5ac01a2798dc447cb38aff9/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_15_BLEconnection.jpg)
+*Figure 6.15. BLE connection steps.*
+
+In order to save power, the device spends most the time sleeping. The master sends out periodic requests to communicate. If the slave wishes to communicate, the master and slave will exchange data during this connection event. Figure 6.16 plots the device current verses time. This graph shows most of the current draw occurs during the connection events. The embedded device can save power by reducing the period of the connection events or by choosing not to participate in all the events.
+
+![](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/a14ed1dd3c88f1f48a4c9842567dab8b/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_16_BLEconnectionEvents.jpg)
+*Figure 6.16. CC2650 current verses time, showing the connection events.*
+
+For example, you will see the advertising interval parameter in the NPI_StartAdvertisement message. In particular, the example projects set the advertising interval to 62.5ms.
+
+--
+--
+
+###6.2.2. Client-server Paradigm
+
+[Client-server](https://youtu.be/9tf9W2od5zc)
+
+The client-server paradigm is the dominant communication pattern for network protocols, see Figure 16.17. In Lab 6, the embedded system will be the server, and the smart phone will be the client. The client can request information from the server, or the client can send data to the server. With Bluetooth this exchange of data is managed by the services and profiles, discussed in the next section. There are four main profile types.
+
+A peripheral device has sensors and actuators. On startup it advertises as connectable, and once connected it acts as a slave. The embedded device in Lab 6 will be a peripheral.
+
+A central device has intelligence to manage the system. On startup it scans for advertisements and initiates connections. Once connected it acts as the master. The smart phone in Lab 6 will be a central device.
+
+A broadcaster has sensors collecting information that is generally relevant. On startup it advertises but is not connectable. Other devices in the vicinity can read this information even though they cannot connect to the broadcaster. An example is a thermometer.
+
+An observer can scan for advertisements but cannot initiate a connection. An example is a temperature display device that shows temperatures measured by broadcasters.
+
+![Figure 6.17](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/7f6386d673079e7a0c956a1939ca95a5/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_17_clientServer.jpg)
+*Figure 6.17. Client-server Paradigm.*
+
+Read indication. When the client wishes to know the value of a characteristic, it will issue a read indication. Inside the request will be a universally unique identifier (UUID) that specifies which characteristic is desired. The server will respond with the value by returning a read confirmation. The data may be one or more bytes. For large amounts of data, the response could be broken into multiple messages. In the example projects, the data will be 1, 2 or 4 bytes long. The size of the data is determined during initialization as the characteristic is configured.
+
+Write indication. When the client wishes to set the value of a characteristic, it will issue a write indication. This request will include data. The request will also include a UUID that specifies to which characteristic the data should be written. The server will respond with an acknowledgement, called a write confirmation.
+
+Notify request. When the client wishes to keep up to data on a certain value in the server, it will issue a notify request. The request includes a UUID. The server will respond with an acknowledgement, and then the server will stream data. This streaming could occur periodically, or it could occur whenever the value changes. In the example projects, notify indication messages are sent from server to client periodically. The client can start notification (listen command on the phone) or stop notifications.
+
+--
+--
+
+###6.3.1. CC2650 Microcontroller
+
+[CC2650](https://youtu.be/i6BRqb2SCyo)
+
+There are three controllers on the CC2650: a main CPU, an RF core, and a sensor controller. Together, these combine to create a one-chip solution for Bluetooth applications. The main CPU includes 128kB of flash, 20kB of SRAM, and a full range of peripherals. Typically, the ARM Cortex-M3 processor handles the application layer and BLE protocol stack. However, in this chapter, we will place the application layer on another processor and use the CC2560 just to implement Bluetooth.
+
+The RF Core contains an ARM Cortex-M0 processor that interfaces the analog RF and base-band circuitries, handles data to and from the system side, and assembles the information bits in a given packet structure. The RF core offers a high level, command-based API to the main CPU. The RF core is capable of autonomously handling the time-critical aspects of the radio protocols (802.15.4 RF4CE and ZigBee, Bluetooth Low Energy) thus offloading the main CPU and leaving more resources for the user application. The RF core has its own RAM and ROM. The ARM Cortex-M0 ROM is not programmable by customers. The basic circuit implementing the 2.4 GHz antenna is shown in Figure 6.18.
+
+The Sensor Controller block provides additional flexibility by allowing autonomous data acquisition and control independent of the main CPU, further extending the low-power capabilities of the CC2650. The Sensor Controller is set up using a PC-based configuration tool, called Sensor Controller Studio, and example interfaces include:
+
+* Analog sensors using integrated ADC
+* Digital sensors using GPIOs, bit-banged I2C, and SPI
+* UART communication for sensor reading or debugging
+* Capacitive sensing
+* Waveform generation
+* Pulse counting
+* Keyboard scan
+* Quadrature decoder for polling rotation sensors
+* Oscillator calibration
+
+![Figure 6.18](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/52729bb44fa458e47dec16cd12003b05/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_18_CC2650_BlockDiagram.jpg)
+*Figure 6.18. The CC2650 includes a main CPU, a suite of I/O devices, an RF core, and a sensor controller.*
+
+The CC2650 uses a radio-frequency (RF) link to implement Bluetooth Low Energy (BLE). As illustrated in Figure 6.19, the CC2650 can be used as a bridge between any microcontroller and Bluetooth. It is a transceiver, meaning data can flow across the link in both directions.
+
+![Figure 6.19](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/610802ef952b6a9332209430e9fd064c/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_19_CC2650_networks.jpg)
+*Figure 6.19. Block diagram of a wireless link between two microcontroller systems.*
+
+Figure 6.20 shows a CC2650 BoosterPack. This board comes preprogrammed with the simple network processor described in the next section. With a JTAG debugger, other programs can be loaded onto this CC2650. For more information see
+http://www.ti.com/tool/boostxl-cc2650ma
+
+![Figure 6.20](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/8682ac32abd2d64a4102e8f9f1b6a6cf/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_20_CC2650BoosterPhoto.jpg)
+*Figure 6.20. CC2650 BoosterPack (BOOSTXL-CC2650MA).*
+
+Figure 6.21 shows a CC2650 LaunchPad. The top part of the PCB is the debugger and the bottom part implements the CC2650 target system. Figure 6.22 shows the pin connections to the booster pack headers. More details on the connections we will use are given in Lab 6. For more information, see
+http://www.ti.com/ww/en/launchpad/launchpads-connected-launchxl-cc2650.html
+
+![Figure 6.21](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/c68a89c777db78b04a4b80bb37c8ca81/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_21_CC2650LaunchPadPicture.jpg)
+Figure 6.21. CC2650 LaunchPad (LAUNCHXL-CC2650).
+
+![Figure 6.22](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/12b0dde156a89691c01b31f1f731a4be/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_22_CC2650LaunchPadPins.jpg)
+Figure 6.22. CC2650 LaunchPad pin connections.
+
+--
+--
+
+###6.3.2. Single Chip Solution, CC2650 LaunchPad
+
+The CC2650 microcontroller is a complete System-on-Chip (SoC) Bluetooth solution, as shown in Figure 6.23. One could deploy the application, the Bluetooth stack, and the RF radio onto the CC2650.
+
+![Figure 6.23](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/5c8b734fbd5eb86b1ce0f76d48a84a16/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_23_CC2500singlechipNetwork.jpg)
+*Figure 6.23. Block diagram of a wireless link between two single-chip embedded systems.*
+
+Figure 6.24 shows a CC2650 module, which could be used in a Bluetooth enabled device.
+
+![Figure 6.24](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/217c70322f12cce4bf92c2a611e39f9f/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_24_CC2650Module.jpg)
+*Figure 6.24. CC2650 module. See http://www.ti.com/tool/boostxl-cc2650ma*
+
+####Programming with CCS Clould
+
+[CCS Clould](https://youtu.be/gOjPnEpikY4)
+
+1. Start with http://www.ti.com/ and log into TI
+2. Go to https://dev.ti.com/ and click CCS cloud. Bookmark this page, it is where you will develop code.
+3. Open another tab at following site to get more information on this process  project0_resources
+4. Go to the following site and import the Project 0 CCS cloud (click the cloud icon) Project Zero code
+5. Connect the CC2650 LaunchPad, and run the ProjectZeroStack
+
+--
+--
+
+
+
+
+
+
+
+
+
+
+
+
+
