@@ -373,7 +373,36 @@ The following steps occur in this order
 3. Advertise and optionally wait for a connection; 
 4. Respond to GATT requests and send notifications / indications as desired.
 
+--
+--
 
+###6.4.2. Services and Characteristics
+
+[Services and Characteristics](https://youtu.be/ci9r_qG-Pk4)
+
+After the CC2650 is reset, the next step is to services and characteristics. In the example projects we will define one service with multiple characteristics. To create a service, the master first issues an Add Service command (0x35,0x81). For each characteristic, the master sends an Add Characteristic Value (0x35,0x82) and an Add Characteristic Description (0x35,0x83) message. Once all the characteristics are defined, the master sends a Register Service command (0x35,0x84). Each of the commands has an acknowledgement response. The debugger output for a service with one characteristic is shown in Figure 6.30. The detailed syntax of these messages can be found in the TI CC2640 Bluetooth low energy Simple Network Processor API Guide.
+
+
+![Figure 6.30](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/d78fb6607690b51c3c60c8c13dc62994/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_30_AddService.jpg)
+*Figure 6.30. TExaSdisplay output as the device sets up a service with one characteristic.*
+
+These data were collected running the VerySimpleApplicationProcessor_xxx project. Figures 6.31 through 6.34 show the four messages used to define a service with one characteristic. The add service creates a service. The add characteristic value declaration defines the read/write/notify properties of a characteristic in that service. The response to this message includes the handle. The add characteristic description declaration defines the name of the characteristic. When we create services with multiple characteristics, we simply repeat the add characteristic value and add characteristic description declarations for each. The register service makes that service active.
+
+
+![Figure 6.31](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/9c96c5f75b4a5d3a14afaa033ed044da/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_31_AddService2.jpg)
+*Figure 6.31. Add service message from the VerySimpleApplicationProcessor_xxx project.*
+
+
+![Figure 6.32](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/337f749a825ef865fc5782220403601e/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_32_AddCharValue2.jpg)
+*Figure 6.32. Add characteristic value declaration message from the VerySimpleApplicationProcessor_xxx project.*
+
+
+![Figure 6.33](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/4b62a2cf57a91470709f95c7ee0081e6/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_33_AddCharDesc2.jpg)
+*Figure 6.33. Add characteristic declaration message from the VerySimpleApplicationProcessor_xxx project.*
+
+
+![Figure 6.34](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/b83c145a89f5fcc54904be1aff67723d/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_34_RegisterService2.jpg)
+*Figure 6.34. Register service message from the VerySimpleApplicationProcessor_xxx project.*
 
 
 
