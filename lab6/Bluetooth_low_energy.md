@@ -405,5 +405,75 @@ These data were collected running the VerySimpleApplicationProcessor_xxx project
 *Figure 6.34. Register service message from the VerySimpleApplicationProcessor_xxx project.*
 
 
+--
+--
+
+
+###6.4.3. Advertising
+
+[6.4.3. Advertising](https://youtu.be/MNFVXFdWcZ8)
+
+
+After all the services and characteristics are defined, the master will setup and initiate advertising. The master will send four messages to set up advertising. The debugger output for advertising is shown in Figure 6.35. Each message will be acknowledged by the NP. A 0x35,0x85 message will set the device name. There are two 0x55,0x43 messages to configure the parameters of the advertising. The 0x55,0x42 message will start advertising. Again, detailed syntax of these messages can be found in the TI CC2640 Bluetooth low energy Simple Network Processor API Guide. Figure 6.36 shows the C code to define a Set Device Name message.
+
+
+![Figure 6.35](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/2679757038b186d7ad8679f234d451e9/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_35_AdvertisingOutput2.jpg)
+*Figure 6.35. TExaSdisplay output as the device sets up advertising. These data were collected running the VerySimpleApplicationProcessor_xxx project.*
+
+
+![Figure 6.36](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/3cd9e07d6d7ea1068b1f87029e533439/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_36_SetGATTparameter2.jpg)
+*Figure 6.36. A set device name message from the VerySimpleApplicationProcessor_xxx project.*
+
+--
+--
+
+###6.4.4. Read and Write Indications
+
+[6.4.4. Read and Write Indications](https://youtu.be/8dBcgSfCBeE)
+
+Figure 6.37 shows the message exchange when the client issues a read request. The NP sends a read indication to the AP, containing the connection and handle of the characteristic. The AP responds with a read confirmation containing status, connection, handle, and the data.
+
+
+![Figure 6.37](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/8f794a850b650adc92945056f806d50d/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_37_read.jpg)
+*Figure 6.37. TExaSdisplay output occurring when the client issues a read request. These data were collected running the VerySimpleApplicationProcessor_xxx project.*
+
+Figure 6.38 shows the message exchange when the client issues a write request. The NP sends a write indication to the AP, containing the connection, handle of the characteristic, and the data to be written. The AP responds with a write confirmation containing status, connection, and handle.
+
+
+![Figure 6.38](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/875482dce124a9b12047f4e10e23e938/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_38_write.jpg)
+*Figure 6.38. TExaSdisplay output occurring when the client issues a write request. These data were collected running the VerySimpleApplicationProcessor_xxx project.*
+
+####References
+
+* [SNP_API_Updated.pdf](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/4d03a377b88972197ede4cf38a512f35/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/SNP_API_Updated.pdf)
+* [CC2640_Simple_Network_Processer_API_Guide.pdf](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/8db181df94eb13033011730aedd74b01/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/CC2640_Simple_Network_Processer_API_Guide.pdf)
+* 
+
+
+--
+--
+
+
+###6.4.5. Example Projects
+
+We recommend you run the VerySimpleApplicationProcessor project first. The first video in the section shows this project connected to an iPhone running LightBlue. It sets up one service and 4 characteristics.
+
+[Example Projects](https://youtu.be/VzR-0tOLb3A)
+
+The next video shows the VerySimpleApplicationProcessor project connected to an Android running BLE Scanner. It sets up one service and 4 characteristics.
+
+[VerySimpleApplicationProcessor on an Android](https://youtu.be/49x6RRB3yv4)
+
+The second project we recommend is the ApplicationProcessor. The next shows this project controlled by an iPhone. It sets up one service and five characteristics.
+
+[ApplicationProcessor](https://youtu.be/Jc2L0eAp7Pc)
+
+
+--
+--
+
+###6.5.1. CoAP
+
+
 
 
