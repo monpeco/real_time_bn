@@ -474,6 +474,97 @@ The second project we recommend is the ApplicationProcessor. The next shows this
 
 ###6.5.1. CoAP
 
+The Constrained Application Protocol (CoAP) was specifically developed to allow resource-constrained devices to communicate over the Internet using UDP instead of TCP. In particular, many embedded devices have limited memory, processing power, and energy storage. Developers can interact with any CoAP-enabled device the same way they would with a device using a traditional Representational state transfer (REST) based API like HTTP. CoAP is particularly useful for communicating with low-power sensors and devices that need to be controlled via the Internet.
+
+CoAP is a simple request/response protocol very similar to HTTP, that follows a traditional client/server model. Clients can make GET, PUT, POST, and DELETE requests to resources. CoAP packets use bitfields to maximize memory efficiency, and they make extensive usage of mappings from strings to integers to keep the data packets small enough to transport and interpret on-device. A CoAP message header is only 4-bytes long with most control messages being just that length. Most optional fields in the message format are in binary with the payload restricted in size so all CoAP messages fit inside a UDP datagram. TCP is a connection oriented protocol, which means the server, or a client, will open a socket and establish a connection with the server. And the communication is done over a connection. For the duration of the communication, the connection is on. Whereas, COAP works on UDP, which means that it's connectionless. And it allows what we call as a disconnected operation, which means that the client and the server are not connected to each other. And therefore, they can act asynchronously.
+
+Aside from the extremely small packet size, another major advantage of CoAP is its usage of UDP; using datagrams allows for CoAP to be run on top of packet-based technologies like SMS. There is a one-to-one mapping between CoAP and HTTP effectively providing a bridge between the all popular HTTP protocol to the emerging CoAP protocol.
+
+All CoAP messages can be marked as either “confirmable” or “nonconfirmable,” serving as an application-level Quality of Service (QoS) to provide reliability. While SSL/TLS encryption isn’t available over UDP, CoAP makes use of Datagram Transport Layer Security (DTLS), which is analogous to the TCP version of TLS. The default level of encryption is equivalent to a 3,072-bit RSA key. Even with all of this, CoAP is designed to work on microcontrollers with as little as 10KB of RAM.
+
+One of the downsides of CoAP: It's a one-to-one protocol. Though extensions that make group broadcasts possible are available, broadcast capabilities are not inherent to the protocol. Arguably, an even more important disadvantage is the need for both devices to be simultaneously powered, so when one sends a UDP, the other can receive it. In summary, the highlights of CoAP include:
+
+Small 4-byte header
+Option fields in binary
+Messages fit into one UDP datagram (no fragmentation)
+Works with SMS (text messaging)
+Connectionless
+Needs less than 10 kB of RAM
+
+Reference:
+http://www.infoworld.com/article/2972143/internet-of-things/real-time-protocols-for-iot-apps.html
+
+--
+--
+
+###6.5.2 MQTT
+
+[MQTT](https://youtu.be/iO4SKlomgmI)
 
 
+Message Queue Telemetry Transport (MQTT) is a publish-subscribe messaging protocol, abbreviated as pub-sub. The MQTT name was inherited from a project at IBM. Similar to CoAP, it was built with resource-constrained devices in mind. MQTT has a lightweight packet structure designed to conserve both memory usage and power. A connected device subscribes to a topic hosted on an MQTT broker. Every time another device or service publishes data to a topic, all of the devices subscribed to it will automatically get the updated information.
 
+Figure 6.39 shows the basic idea of the pub-sub model. MQTT uses an intermediary, which is called a broker. There are clients, or publishers, which produce data. The MQTT protocol calls this data a topic, and each topic must have a unique identifier. The figure shows a temperature sensor, which is an embedded device with a sensor attached, and it periodically publishes the topic “temperature”. To publish a topic means to send data to the broker. The broker keeps track of all the published information. Subscribers are devices consumers, which are interested in the data. What the subscribers do is they express their interest in a topic by sending a subscription message. In this figure we have two devices that have subscribed to the topic “temperature”. Whenever new data is available, the broker will serve it to both subscribers.
+
+
+![Figure 6.39](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/b4ea03a1ea98cd303051d05dc7fc648f/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig06_39_MQTT.jpg)
+*Figure 6.39. With MQTT, the broker acts as an intermediary between producers and consumers.*
+
+The fundamental advantage of a pub/sub model for communication in contrast with a client-server model is the decoupling of the communicating entities in space, time and synchronization. That is, the publisher and subscribed do not need to know each other, they do not run at the same time and they can act asynchronously. Other advantages of MQTT are the use of a publish-subscribe message queue and the many-to-many broadcast capabilities. Using a long-lived outgoing TCP connection to the MQTT broker, sending messages of limited bandwidth back and forth is simple and straightforward.
+
+The downside of having an always-on connection is that it limits the amount of time the devices can be put to sleep. If the device mostly sleeps, then another MQTT protocol can be used: MQTT-SN, which is an extension of MQTT for sensor networks, originally designed to support ZigBee. MQTT-S is another extension that allows the use of UDP instead of TCP as the transport protocol, with support for peer-to-peer messaging and multicasting.
+
+Another disadvantage of MQTT is the lack of encryption in the base protocol. MQTT was designed to be a lightweight protocol, and incorporating encryption would add a significant amount of overhead to the connection. One can however, use Transport Layer Security(TLS) extensions to TCP, or add custom security at the application level.
+
+References:
+
+http://www.hivemq.com/blog/mqtt-essentials/
+http://www.infoworld.com/article/2972143/internet-of-things/real-time-protocols-for-iot-apps.html
+
+
+--
+--
+
+###About Lab 6
+
+The objectives of Lab 6 are:
+
+* Interface the 2650 BLE module to the LaunchPad
+* Develop a set of NPI message packets to support BLE communication
+* Connect the fitness device to a cell phone
+* Understand the concepts of service, characteristic, and advertising
+
+[Running a lab 6 Solution](https://youtu.be/Dyv5dGaNCg8)
+
+Chapter 6 provides a short introduction to the fundamentals of Bluetooth. The two starter applications VerySimpleApplicationProcessor_xxx and ApplicationProcessor_xxx provide simple solutions using Bluetooth Low Energy (BLE) to pair an embedded system with a smart phone using BLE implemented on the CC2650. The goal of these two examples is to create the simplest BLE solution that exposes the concepts of service, characteristic, and advertising. In this lab, you are asked to fully understand the syntax and functionality of the NPI protocol used to communicate between the TM4C123/MSP432 LaunchPad and the CC2650 BLE module. Your LaunchPad implements the fitness device, derived from either Lab 1 or Lab 3, and the CC2650 implements the BLE stack in form of the Simple Network Processor (SNP). More specifically, in this lab you will implement functions that build 11 different types of NPI messages. There are three possible hardware configurations to complete Lab 6 described in the following sections. The three options listed here correspond to the Option 1, Option 2, and Option 3 as described in the GPIO.c file used for the BLE applications.
+
+[Four Options for using the CC2650](https://youtu.be/ER6VZquSGbc)
+
+The first option for Lab 6 is to use the BOOSTXL-CC2650MA BoosterPack programmed with a default version of SNP just as it is shipped by the manufacturer. The MRDY/SRDY pins in this option correspond to the documentation provided with the CC2650 BoosterPack, see Figure 6.1. To use the CC2650 BoosterPack for Lab 6 in this option you do not have to program the CC2650. However, you do have to connect seven wires between the TM4C123/MSP432 LaunchPad and the CC2650 BoosterPack.
+
+
+![Figure 6.1](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/13558a878d9e86b916a9791a5d07fb42/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Lab06_01_CC2650BP.jpg)
+*Figure 6.1. Connections between TM4C123/MSP432 LaunchPad and the CC2650 BoosterPack (this option does not require programming the CC2650, but the boards are connected with 7 wires and CANNOT be stacked)*
+
+In the file GPIO.h, line 8, comment out (do not define DEFAULT).
+
+//#define DEFAULT 1
+
+[CC2650 BoosterPack](https://youtu.be/b9TJSAx0CzE)
+--
+--
+
+
+###References
+
+Reprinted with approval from these five books:
+
+Embedded Systems: Introduction to ARM Cortex-M Microcontrollers, ISBN: 978-1477508992, Jonathan Valvano, http://users.ece.utexas.edu/~valvano/arm/outline1.htm
+
+Embedded Systems: Introduction to the MSP432 Microcontroller, ISBN: 978-1512185676, Jonathan Valvano, http://users.ece.utexas.edu/~valvano/arm/msp432.htm
+
+Embedded Systems: Real-Time Interfacing to the MSP432 Microcontroller, ISBN: 978-1514676585, Jonathan Valvano, http://users.ece.utexas.edu/~valvano/arm/msp432.htm
+
+Embedded Systems: Real-Time Interfacing to ARM Cortex-M Microcontrollers, ISBN: 978-1463590154, Jonathan Valvano, http://users.ece.utexas.edu/~valvano/arm/outline.htm
+
+Embedded Systems: Real-Time Operating Systems for ARM Cortex-M Microcontrollers, ISBN: 978-1466468863, Jonathan Valvano, http://users.ece.utexas.edu/~valvano/arm/outline3.htm
