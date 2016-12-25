@@ -551,10 +551,157 @@ In the file GPIO.h, line 8, comment out (do not define DEFAULT).
 //#define DEFAULT 1
 
 [CC2650 BoosterPack](https://youtu.be/b9TJSAx0CzE)
+
+The second option for Lab 6 is to use the BOOSTXL-CC2650MA BoosterPack programmed with a special version of SNP called simple_np_cc2650bp_uart_pm_xsbl_mooc_custom.hex. To use the CC2650 BoosterPack for Lab 6 stacking it with the MKII as shown in Figure 6.2, it must be programmed.
+
+![Figure 6.2](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/b886f7ef5fc062488ac2f874eb021324/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Lab06_02_CC2650BP.jpg)
+*Figure 6.2. Connections between the MKII, the TM4C123/MSP432 LaunchPad and the CC2650 BoosterPack. This option requires programming the CC2650BP, but allows the three boards to be stacked.*
+
+Within the list of available boards for this class there are two possible boards that can be used to program the CC2650 BoosterPack. The first programming option is the CC2650 LaunchPad. To configure a CC2650 LaunchPad as a stand-alone debugger: 1) Remove the five left-most jumpers on the CC2650 LaunchPad (RESET, TDI, TDO, TCK, and TMS). This disconnects the target CC2650 from the debugger; 2) Connect the JTAG cable from the CC2650 LaunchPad to the CC2650 BoosterPack. Now you can connect the CC2650 LaunchPad to the computer and use the SmartRF programmer to reflash the CC2650 BoosterPack. Program the hex files with bp (not lp) in the name. The hex file needed for this class has mooc in its name.
+
+Another way to reprogram the CC2650 BoosterPack is the red MSP432 LaunchPad (not the black one). 1) Remove the five left-most jumpers on the red MSP432 LaunchPad (RESET, TDI, TDO, TCK, and TMS). This disconnects the target MSP432 from the debugger; 2) Connect the JTAG cable from the red MSP432 LaunchPad (XDS110 Out) to the CC2650 BoosterPack. Now you can connect the red MSP432 LaunchPad to the computer and use the SmartRF programmer to reflash the CC2650 BoosterPack.
+
+Step 0) Create an account on my.ti.com and log in.
+
+Step 1) Search TI.com for “Smartrf flash programmer”. Download and unzip a file called flash-programmer-2-1.7.4.zip. In administrator mode, install the application, Setup_SmartRF_Flash_Programmer_2-1.7.4.exe
+
+Step 2) Download and unzip hex files from this web [link ble_2_02_simple_np_setup.exe](http://software-dl.ti.com/dsps/forms/self_cert_export.html?prod_no=ble_2_02_simple_np_setup.exe&ref_url=http://software-dl.ti.com/lprf/BLE-Simple-Network-Processor-Hex-Files)  These hex files (object code) implement the BLE stack in the form of the simple network processor (SNP). This download creates two directories: one with files for the BoosterPack (cc2650bp) and one with files for the LaunchPad (cc2650lp).
+
+Step 3) Find this hex file on your computer: simple_np_cc2650bp_uart_pm_xsbl_mooc.hex 
+Notice the letters bp (for BoosterPack) and mooc.
+
+Step 4) Use the Flash Programmer to burn this hex file onto your CC2650 BoosterPack
+
+Step 5) In the file GPIO.h, line 8, comment out (do not define DEFAULT)
+
+//#define DEFAULT 1
+
+There is a mistake in the comments of option 3 of GPIO.c. MRDY in this configuration is connected to the CC2650 DIO8 pin.
+
+![](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/3b2a4bce69bfa0135e660fc3c5fa1951/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Lab6fix.jpg)
+
+The third option for Lab 6 is to use the LAUNCHXL-CC2650 LaunchPad programmed with a special version of SNP called simple_np_cc2650lp_uart_pm_xsbl_mooc_custom.hex.
+
+![Figure 6.3](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/dc9687d065721b37e0a3df71b528db70/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Lab06_03_CC2650LP.jpg)
+*Figure 6.3. Connections between the MKII, the TM4C123/MSP432 LaunchPad and the CC2650 LaunchPad. This option requires programming the CC2650LP, but allows the three boards to be stacked.*
+
+To use the CC2650 LaunchPad for Lab 6 it must be programmed using the instructions outlined in the following video.
+
+[Programming the CC2650 LaunchPad](https://youtu.be/Ov7gAtLUmKk)
+
+Step 0) Create an account on my.ti.com and log in.
+
+Step 1) Search TI.com for “Smartrf flash programmer”. Download and unzip a file called flash-programmer-2-1.7.4.zip. In administrator mode, install the application, Setup_SmartRF_Flash_Programmer_2-1.7.4.exe
+
+Step 2) Download and unzip hex files from this web link ble_2_02_simple_np_setup.exe These hex files (object code) implement the BLE stack in the form of the simple network processor (SNP). This download creates two directories: one with files for the BoosterPack (cc2650bp) and one with files for the LaunchPad (cc2650lp).
+
+Step 3) Find this hex file on your computer: simple_np_cc2650lp_uart_pm_xsbl_mooc.hex Notice the letters lp (for LaunchPad) and mooc.
+
+Step 4) Use the Flash Programmer to burn this hex file onto your CC2650 LaunchPad
+
+Step 5) In the file GPIO.h, line 8, comment out (do not define DEFAULT)
+
+//#define DEFAULT 1
+
+The reason we reprogrammed the CC2650 BoosterPack in option 2 was there is a pin conflict between the standard configuration of the CC2650 and MKII BoosterPacks. If you have a BLE project that does not use the MKII, then you can use the CC2650 BoosterPack without reprogramming the CC2650. Since Lab 6 uses the MKII, this option cannot be used for Lab 6, but could be used for other projects that do not require the MKII I/O BoosterPack.
+
+
+![Figure 6.4](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/05e4f5cad91e39189d5e21d5388bb9c1/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Lab06_04_CC2650BP.jpg)
+*Figure 6.4. Connections between the TM4C123/MSP432 LaunchPad and the CC2650 BoosterPack. This option does not require programming the CC2650BLP, but cannot be used with the MKII BoosterPack.*
+
+In this approach, in the file GPIO.h, activate the define statement in line 8 out (do define DEFAULT).
+
+#define DEFAULT 1
+
+There is a bug in the lab 6 grader for testing BuildSetAdvertisementDataMsg. When the grader calls your function with “Yerraballi” as the name, it incorrectly looks for this message:
+
+FE,15,00,55,43,00,0A,09,59,65,72,72,61,62,61,6C,6C,69,05,12,50,00,20,03,02,0A,5B
+
+The correct message the grader should have been looking for is:
+
+FE,16,00,55,43,00,0B,09,59,65,72,72,61,62,61,6C,6C,69,05,12,50,00,20,03,02,0A,00,59
+
+We fixed this Lab6 grader bug and created new texas.o files. Download a new texas.o and replace the existing one in your Lab6 folder (either Lab6 with Lab1 or Lab6 with Lab3). This TM4C123 version should be placed in the TM4C123 Lab 6 folder http://users.ece.utexas.edu/~valvano/edX/TM4C123/texas.o. This MSP432 version should be placed in the MSP432 Lab 6 folder http://users.ece.utexas.edu/~valvano/edX/MSP432/texas.o This new grader will accept either the old version with the bug, or the new correct version.
+
+
 --
 --
 
+###Debugging Lab 6
 
+Step 1) The first step for completing Lab 6 is to configure your system using one of the three options listed in the previous section.
+
+Step 2) The next step is to compile, download, and run these two projects
+
+VerySimpleApplicationProcessor_xxx
+ApplicationProcessor_xxx
+We encourage you to rewatch the three videos in edX Section 6.4.5, and run these two projects on your hardware.
+
+Step 3) You have two software options for Lab 6. The Lab6wLab1_xxx project allows you to complete Lab 6 using the simple fitness device from Lab 1. The Lab6wLab3_xxx project allows you to complete Lab 6 using the RTOS from Lab 3. The next step is to open one of these two Lab6 projects and paste in either your Lab 1 or your Lab 3 solution. The code you have to write will be placed in the AP_Lab6.c file. In this file there are 11 empty functions into which you will develop your Lab 6 solution. Basically, these 11 functions are used to formulate NPI messages that are sent from your LaunchPad to the CC2650 (which is running SNP). Details of these functions can be found in the AP_Lab6.c file.
+
+If you hold Button 1 down and start the software it will run the Lab 6 grader and pause while you are holding the button. The results of the grader can be observed on TExaSdisplay. When you release the button, the fitness device will run.
+
+[Running the Starter Project](https://youtu.be/HaIeMaJdq0U)
+
+
+
+--
+--
+
+###Lab 6 Grader
+
+[Getting your grade in Lab 6](https://youtu.be/WOG0oIPxSz4)
+
+Lab 6
+90.0 puntos posibles (calificado)
+Grading your Lab 6 does require a LaunchPad development board and one of the CC2650 modules. There are two aspects of Lab 6 that are graded. First, you must implement the following 11 functions that produce NPI messages. These functions do not send the messages, they just create the message with the proper syntax. Prior to launching the fitness device, the grader will evaluate these functions. If you hold button 1 down when the software is started it will pause after this initial grading so you can see the results.
+
+BuildGetStatusMsg
+BuildGetVersionMsg
+BuildAddServiceMsg
+BuildRegisterServiceMsg
+BuildAddCharValueMsg
+BuildAddCharDescriptorMsg
+BuildAddNotifyCharDescriptorMsg
+BuildSetDeviceNameMsg
+BuildSetAdvertisementData1Msg
+BuildSetAdvertisementDataMsg
+BuildStartAdvertisementMsg
+The second part of the grading involves Bluetooth communication.
+
+Step 1 Start TExaSdisplay and open the COM port. Download and run your solution.
+
+Step 2 Connect your fitness device to your smart phone, open the edXNum characteristic on the phone, and write the 5549 number to this characteristic. We understand the number here on edX is decimal, and the 4-digit number entered on the phone is hexadecimal. You do not have to convert decimal to hex, just enter the four digits into the phone. The grader will handle the hex to decimal conversion in an appropriate manner.
+
+Step 3 The Lab 6 score and 8-character code will be observable in the TExaSdisplay window. Any score above 70 will be considered a passing grade. If you are not satisfied with your score you are allowed multiple submissions.
+
+Enter the CopyThisToEdX code from the Lab 6 grading engine:
+
+On the Android, we use BLE Scanner
+
+![](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/718517bee09c4c616ea0a5254a731dcb/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Android01.JPG)
+
+You will find all the characteristics under Custom Service
+
+![](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/f227a2ebae9413be45e5cfdf047d6134/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Android02.JPG)
+
+When using BLE Scanner on the Android, you select services by the UUID. For example, the edXNum has a UUID of FFF6. On the Android, you write to the characteristic by hitting the W.
+
+![](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/04731954bf16be176574fcadcc9fcfe3/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Android03.JPG)
+
+The data protocol is byte array. To get a grade, change the format to byte array
+
+![](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/9a4a3d4d279ea7a942db69dab97be36c/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Android04.JPG)
+
+ and simply type in the 4-digit edXNum listed in the above section (no spaces, no commas, no 0x, no converting decimal to hex, no converting hex to decimal). 
+ 
+![](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/a9fae1ec782cc36c7a8a5bec544cfbc2/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Android05.JPG)
+
+Notice the 1234 typed into the phone maps to the 1234 in TExaSdisplay
+
+![](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/fd0c5c33c2cea0765a4106fa12813b2c/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/AndroidTExaS.jpg)
+--
+--
 ###References
 
 Reprinted with approval from these five books:
