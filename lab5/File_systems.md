@@ -140,6 +140,105 @@ Assume the sector size is 4096 bytes and the disk is one gibibytes. How many byt
 
 A gibibyte is 2^30 bytes. Each sector is 2^12 bytes, so there are 2^18 sectors. So you need 2^18 bits in the table, one for each sector. There are 2^3 bits in a byte, so the table should be 2^15 (32768) bytes long.
 
+--
+--
+
+###5.2.2. Linked allocation
+
+[Linked allocation](https://youtu.be/Tqo78RhMbGY)
+
+Linked allocation places a sector pointer in each data sector containing the address of the next sector in the file, as shown in Figure 5.6. Each directory entry contains a file name and the sector number of the first sector. There needs to be a way to tell the end of a file. The directory could contain the file size, each sector could have a counter, or there could be an end-of-file marker in the data itself. Sometimes, there is also a pointer to the last sector, making it faster to add to the end of the file. Assuming the directory is in memory and the file is stored in N sectors, it takes on average N/2 disk-sector reads to access any random piece of data on the disk. Sequential reading and writing are efficient, and it also will be easy to append data at the end of the file.
+
+
+![Figure 5.6](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/350643f5fd629d3f767a9628ac488898/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig05_06FileAllocation.jpg)
+*Figure 5.6. A simple file system with linked allocation.*
+
+####CHECKPOINT 5.6
+
+If the disk holds 2 Gibibytes of data broken into 512-byte sectors, how many bits would it take to store the sector address?
+
+2 Gibibytes is 2^31 bytes. 512 bytes is 2^9 bytes. 31-9 = 22, so it would take 22 bits to store the block number.
+
+####CHECKPOINT 5.7
+
+If the disk holds 2 Gibibytes of data broken into 32k-byte sectors, how many bits would it take to store the sector address?
+
+2 Gibibytes is 2^31 bytes. 32k bytes is 2^15 bytes. 31-15 = 16, so it would take 16 bits to store the block number.
+
+####CHECKPOINT 5.8
+
+The disk in Figure 5.6 has 32 sectors with the directory occupying sector 0. The disk-sector size is 512 bytes. What is the largest new file that can be created? Is there external fragmentation?
+
+There are 16 free blocks, they can all be linked together to create one new file. This means there is no external fragmentation.
+
+####CHECKPOINT 5.9
+
+How would you handle the situation where the number of bytes stored in a file is not an integer multiple of the number of data bytes that can be stored in each sector?
+
+There are many answers. One answer is you could store a byte count in the directory. Another answer is you could store a byte count in each block. Example: the sector size is 512 bytes, and the file contains 1000 bytes. Option 1) We store the count=1000 in the directory. Now, we know the first sector has 512 bytes and the second sector has 488 bytes. In this case there are 24 bytes of wasted space, which we call internal fragmentation. Option 2) We store up 0 to 510 bytes of data in each sector plus a 2-byte count. The first sector has count=510 plus 510 bytes of data, the second sector has count=490 and 490 bytes of data. In this case there are 20 bytes of wasted space, which we call internal fragmentation.
+
+We can also use the links to manage the free space, as shown in Figure 5.7. If the directory were lost, then all file information except the filenames could be recovered. Putting the number of the last sector into the directory with double-linked pointers improves recoverability. If one data sector were damaged, then remaining data sectors could be rechained, limiting the loss of information to the one damaged sector.
+
+![Figure 5.7](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/10cf97d0ab8f07739ddae67670091c4b/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig05_07FileAllocation.jpg)
+*Figure 5.7. A simple file system with linked allocation and free space management.*
+
+
+--
+--
+
+###5.2.3. Indexed allocation
+
+[Indexed allocation](https://youtu.be/-tLlyH2VJuc)
+
+Indexed allocation uses an index table to keep track of which sectors are assigned to which files. Each directory entry contains a file name, an index for the first sector, and the total number of sectors, as shown in Figure 5.8. One implementation of indexed allocation places all pointers for all files on the disk together in one index table. Another implementation allocates a separate index table for each file. Often, this table is so large it is stored in several disk sectors. For example, if the sector number is a 16-bit number and the disk sector size is 512 bytes, then only 256 index values can be stored in one sector. Also for reliability, we can store multiple copies of the index on the disk. Typically, the entire index table is loaded into memory while the disk is in use. The RAM version of the table is stored onto the disk periodically and when the system is shut down. Indexed allocation is faster than linked allocation if we employ random access. If the index table is in RAM, then any data within the file can be found with just one sector read. One way to improve reliability is to employ both indexed and linked allocation. The indexed scheme is used for fast access, and the links can be used to rebuild the file structure after a disk failure.
+
+![Figure 5.8](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/8590b3b862ad6b5f48af215dc3246de6/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig05_08FileAllocation.jpg)
+*Figure 5.8. A simple file system with indexed allocation.*
+
+####CHECKPOINT 5.10
+
+If the sector number is a 16-bit number and the sector size is 512 bytes, what is the maximum disk size?
+
+16+9=25. 2^25 is 32 Mebibytes, which is the largest possible disk.
+
+####CHECKPOINT 5.11
+
+A disk with indexed allocation has 2 GiB of storage. Each file has a separate index table, and that index occupies just one sector. The disk sector size is 1024 bytes. What is the largest file that can be created? Give two ways to change the file system to support larger files.
+
+There are 2^31/2^10=2^21 blocks, so the 21-bit block address will be stored as a 32-bit number. One can store 1024/4=256 index entries in one 1024-byte block. So the maximum file size is 256*1024 = 2^8*2^10 = 2^18 = 256 kibibytes. You can increase the block size or store the index in multiple blocks.
+
+####CHECKPOINT 5.12
+
+This disk in Figure 5.8 has 32 sectors with the directory occupying sector 0 and the index table in sector 1. The disk-sector size is 512 bytes. What is the largest new file that can be created? Is there external fragmentation?
+
+There are 15 free blocks, and they can create an index table using all the free blocks to create one new file. This means there is no external fragmentation.
+
+--
+--
+
+###5.2.4. File allocation table (FAT)
+
+[File allocation table (FAT)](https://youtu.be/LcvPoijFwS0)
+
+The file allocation table (FAT) is a mixture of indexed and linked allocation, as shown in Figure 5.5. Each directory entry contains a file name and the sector number of the first sector. The FAT is just a table containing a linked list of sectors for each file. Figure 5.9 shows file A in sectors 10, 3, and 12. The directory has sector 10, which is the initial sector. The FAT contents at index 10 is a 3, so 3 is the second sector. The FAT contents at index 3 is a 12, so 12 is the third sector. The FAT contents at index 12 is a NULL, so there are no more sectors in file A.
+
+
+![Figure 5.9](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/9537075c9f2d9499c4ca4a12ba19903f/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig05_09FileAllocation.jpg)
+*Figure 5.9. A simple file system with a file allocation table.*
+
+Many scientists classify FAT as a “linked” scheme, because it has links. However, other scientists call it an "indexed" scheme, because it has the speed advantage of an "indexed" scheme when the table for the entire disk is kept in main memory. If the directory and FAT are in memory, it takes just one disk read to access any data in a file. If the disk is very large, the FAT may be too large to fit in main memory. If the FAT is stored on the disk, then it will take 2 or 3 disk accesses to find an element within the file. The - in Figure 5.9 represent free sectors. In Figure 5.10, we can chain them together in the FAT to manage free space. Note, even though we will implement a FAT in Lab 5, we will not chain together the free sectors.
+
+####CHECKPOINT 5.13
+
+This disk in Figure 5.10 has 32 sectors with the directory occupying sector 0 and the FAT in sector 1. The disk sector size is 512 bytes. What is the largest new file that can be created? Is there an external fragmentation? 
+
+There are 15 free blocks, they can create FAT using all the free blocks to create one new file. Each block is 512 bytes, so the largest file is 15 time 512 bytes; there is no external fragmentation.
+
+![Figure 5.10](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/7c25c9036ab34bb286844fbfdd13b9df/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig05_10FileAllocation.jpg)
+*Figure 5.10. The simple file system with a file allocation table showing the free-space management.*
+
+In this section we use 0 to mean null pointer. Later in the chapter and in lab we will use 255 to mean null pointer. We use 0 in this section because this discussion is similar to the standard FAT16. However, in lab we need to use 255 because 255 is the value that occurs when the flash memory is erased.
+
 
 
 
