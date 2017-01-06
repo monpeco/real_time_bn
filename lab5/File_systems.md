@@ -49,3 +49,30 @@ The reliability of the storage medium and the cost of lost information will also
 So in general, we should first study the use cases in our system before choosing or designing the file system. In Lab 5, we will record fitness data onto the file system. Both writing and reading will be done sequentially, and files will never be deleted.
 
 <!-- language: lang-cpp -->
+
+###5.1.2. Specifications
+
+[Specifications](https://youtu.be/6wfwU8VIaeo)
+
+There are many organizational approaches when designing a file system. As we make design decisions, it is appropriate to consider both quantitative and qualitative parameters. We can measure the effectiveness of a file system by
+
+* Maximum file size
+* Maximum number of files
+* Speed to read data at a random position in the file
+* Speed to read data in a sequential fashion
+* Speed to write data into the file
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
