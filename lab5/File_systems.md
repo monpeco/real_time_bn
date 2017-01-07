@@ -240,6 +240,69 @@ There are 15 free blocks, they can create FAT using all the free blocks to creat
 In this section we use 0 to mean null pointer. Later in the chapter and in lab we will use 255 to mean null pointer. We use 0 in this section because this discussion is similar to the standard FAT16. However, in lab we need to use 255 because 255 is the value that occurs when the flash memory is erased.
 
 
+--
+--
+
+###5.3.1. Flash memory
+
+[Flash memory](https://youtu.be/zFn41DD8d9I)
+
+In general, we can divide memory into volatile and nonvolatile categories. Volatile means it loses its data when power is removed and restored. Nonvolatile means it retains its data when power is removed and restored. There are many types of memory, but here are four of them
+
+Volatile memory
+Static random access memory, SRAM
+Dynamic random access memory, DRAM
+Nonvolatile memory
+Flash electrically erasable programmable read only memory, EEPROM
+Ferroelectric random access memory, FRAM
+As you know data and the stack are allocated in RAM. DRAM has fewer transistors/bit compared to SRAM because it does require periodic refreshing. Most Cortex M microcontrollers use SRAM because of its simple technology and ability to operate on a wide range of bus frequencies. For random access memories, there is a size above which DRAM is more cost effective than SRAM. Dynamic random access memory (DRAM) is the type of memory found in most personal computers. Embedded devices like the Beaglebone and Raspberry Pi use DRAM.
+
+Ferroelectric RAM (FRAM) is a random access memory similar to DRAM but uses a ferroelectric layer instead of a dielectric layer. The ferroelectric layer provides the non-volatility needed for program storage. Some new lines of microcontrollers use FRAM instead of flash EEPROM for their non-volatile storage. The MSP430FRxx microcontrollers from Texas Instruments use FRAM to store programs and data in one shared memory object. Other companies that produce FRAM microcontrollers include Fujitsu and Silicon Labs. FRAM requires less power usage, has a faster write, and provides a greater maximum number of write-erase cycles when compared to flash. When compared to flash, FRAMs have lower storage densities, smaller sizes, and higher cost.
+
+Solid-state disks can be made from any nonvolatile memory, such as battery-backed RAM, FRAM, or flash EEPROM. Personal computers typically use disks made with magnetic storage media and moving parts. While this magnetic-media technology is acceptable for the personal computer because of its large storage size (greater than 1 Tibibyte) and low cost (less than $100 OEM), it is not appropriate for an embedded system because of its physical dimensions, electrical power requirements, noise, sensitivity to motion, and weight. Secure digital (SD) cards use Flash EEPROM together with interface logic to read and write data. For an embedded system we could create a file system using an SD card or using the internal flash of the microcontroller itself. SD cards are an effective approach when file storage needs exceed 128 kibibytes, because of the low cost and simple synchronous serial interface. However, in this chapter we will develop a very simple file system using the internal flash of the microcontroller. Other than the microcontroller itself, there will be no additional costs to developing this file system.
+
+Smart phones, tablets, and cameras currently employ solid-state disks because of their small physical size and low power requirements. Unfortunately, solid-state disks have smaller storage sizes and higher cost/bit than the traditional magnetic storage disk. A typical 64-Gibibyte SD card costs less than $20. The cost/bit is therefore about $300/Tibibyte. In contrast, an 8-Tibibyte hard drive costs about $200 or $25/Tibibyte. The cost/bit of flash storage is expensive as compared to a traditional hard drive. However, there is a size point (e.g., below 128 Gibibyte), below which the overall cost of flash will be less than a traditional magnetic/motorized drive.
+
+A flash memory cell uses two transistors; the gates of the two transistors are positioned gate to gate separated by an insulation layer as shown in Figure 5.11. Because each flash bit has only two transistors, the microcontroller can pack more flash bits into the chip as compared to SRAM or FRAM bits. A normal transistor has an input gate that is used to control conductance between the source and drain. However in a flash memory cell, one of the gates is floating, which means it is not connected to anything. If we trap charge on this floating gate, we define this state as value 0. If there is no trapped charge, we define the state as a 1. There are three operations we can perform on the cell.
+
+If we place a large voltage on the control gate (Vcg), we can get any trapped charge to flow from the floating gate to the source below, hence erasing the cell, making its value equal to 1.
+
+Conversely if we place a large voltage of the opposite polarity on the control gate, we can add charge to the floating gate, programming its value equal to 0. On the TM4C123 the smallest granularity with which we can erase is 1024 bytes. On the MSP432 we erase flash in blocks of 4096 bytes. However we can program individual words on most flash memories including the TM4C123 and MSP432. Once erased to a 1 or programmed to a 0, the charge or lack of charge remains on the floating gate even if power is removed from the system. Hence, this memory is nonvolatile. Data in the TM4C123 and MSP432 flash memories will remain valid for 20 years, and the memory will operate up to 100,000 erase/program cycles. Erasing and programming operations take a very long time compared to writing static RAM (SRAM). For example, it takes 8 to 15 ms to erase an entire 1024-byte page on the TM4C123. In contrast, writing 256 words in RAM on an 80-MHz Cortex-M takes 5 cycles/loop, which adds up to 1280 cycles or 16 µs.
+
+
+![Figure 5.11](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/dda17a381ed2ed2639f0bba698120849/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig05_11_flash.jpg)
+*Figure 5.11. The floating gate in a flash memory cell creates the storage.*
+
+To read the value from flash, the control gate is activated. There is a threshold voltage for the control gate at which source-drain current (Id) flows if the bit is 0 and will not flow if the bit is 1. The threshold voltage is depicted as the dotted line in Figure 5.12.
+
+
+![Figure 5.12](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/b7a50a77d6dc458b65e44bfd16d2c3d3/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig05_12_flash2.jpg)
+*Figure 5.12. The trapped charge in the floating gate affects the relationship between control gate voltage and drain current.*
+
+For more information on flash see http://computer.howstuffworks.com/flash-memory.htm For information on RAM memory see http://computer.howstuffworks.com/ram.htm
+
+In summary:
+
+* Flash memory cells have two transistors, so it is has very high density
+* Nonvolatile behavior implemented as trapped/no charge on the floating gate
+* We can erase an entire block (1k or 4k), making all bits 1
+* We can program individual bytes/words, making bits 0 as needed
+* Both erasing and programming are very slow compared to reading
+
+
+--
+--
+
+
+
+
+
+
+
+
+
+
+
 
 
 
