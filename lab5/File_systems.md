@@ -293,7 +293,97 @@ In summary:
 --
 --
 
+###5.3.2. Flash device driver
 
+[Flash device driver](https://youtu.be/HjaD5EhMFJ8)
+
+In this chapter we will develop a file system using the internal flash storage of the microcontroller. Both the TM4C123 and MSP432 have 256 kibibytes of internal flash, existing from addresses 0 to 0x0003FFFF. Normally, we use the internal flash to save the machine code of our software. However, in this chapter we will allocate half of the flash, which is 128 kibibytes, to create a solid state disk. We divide the disk into sectors and operate on a sector by sector basis. Typically the sector size is a power of 2; let each sector be 2p bytes. This means we will partition the 217-byte disk into 2m sectors, where m+p=17. In general, there are three operations: we can erase (set bits to 1), program (set bits to 0), and read. The physical layer functions provide these basic operations. Program 5.1 shows the prototypes for the TM4C123. We do not need physical layer functions to read the flash, because once erased and programmed, software simply reads from the memory address in the usual manner. The TM4C123 is optimized for programming up to 128-byte (32-word) aligned “mass writes” or “fast writes”. The MSP432 implements this feature for up to 64-byte (16-word) arrays. The smallest block that we can erase on the TM4C123 is 1024 bytes. On the MSP432 we erase flash in blocks of 4096 bytes.
+
+    <!-- language: lang-c -->
+    //------------Flash_Erase------------
+    // Erase 1 KB block of flash.
+    // Input: addr 1-KB aligned flash memory address to erase
+    // Output: 0 if successful, 1 if fail 
+    int Flash_Erase(uint32_t addr);
+    
+    //------------Flash_Write------------
+    // Write 32-bit data to flash at given address.
+    // Input: addr 4-byte aligned flash memory address to write
+    //        data 32-bit data
+    // Output: 0 if successful, 1 if fail 
+    int Flash_Write(uint32_t addr, uint32_t data);
+    
+    //------------Flash_WriteArray------------
+    // Write an array of 32-bit data to flash starting at given address.
+    // Input: source pointer to array of 32-bit data
+    //        addr 4-byte aligned flash memory address to start writing
+    //        count number of 32-bit writes
+    // Output: number of successful writes; return value == count if successful
+    // Note: at 80 MHz, it takes 678 usec to write 10 words
+    int Flash_WriteArray(uint32_t *source, uint32_t addr, uint16_t count);
+
+*Program 5.1. Prototypes for the physical layer functions to manage the flash (4-k erase for MSP432).*
+
+
+--
+--
+
+###5.3.3. eDisk device driver
+
+[eDisk device driver](https://youtu.be/U53iC5EEhNY)
+
+We will add an abstraction level above the physical layer to create an object that behaves like a disk. In particular, we will use 128 kibibytes of flash at addresses 0x00020000 to 0x0003FFFF to create the solid state disk and partition the disk into 512-byte sectors. This abstraction will allow us to modify the physical layer without modifying the file system code. For example, we might change the physical layer to a secure digital card, to a battery-backed RAM, to an FRAM, or even to network storage.
+
+On most disks, there is physical partitioning of the storage into blocks in order to optimize for speed. For example, the smallest block on the MSP432 that we can erase is 4 kibibytes, and on the TM4C123 the block size is 1 kibibyte. We will use the term block to mean a physical partition created by the hardware, and use the term sector (which can be 1 or more blocks) as a logical partition defined by the operating system. In a file system, we will partition the disk into sectors and allocate whole sectors to a single file. In other words, we will not store data from two files into the same sector. This all or nothing allocation scheme is used by most file systems, because it simplifies implementation.
+
+If we were to implement a file system that allows users to erase, move, insert (grow) or remove (shrink) data in the files, then we would need to erase blocks dynamically. Because the smallest block on the MSP432 that we can erase is 4096 bytes, we would have to choose a sector size that is an integer multiple of 4k. On the TM4C123 smallest sector size would be 1k. Unfortunately, a disk made from the 128k of the flash with 4k-sectors would only have 32 sectors. 32 is such a small number the file system would be quite constrained.
+
+The philosophy of this course has been to implement the simplest system that still exposes the fundamental concepts. Therefore, in this course we will develop a simple file system that does not allow the user to delete, move, grow, or shrink data in the files. It does however allow users to create files and write data to a file in increments of sectors. More specifically, when writing we will always append data to the end of the file. We call this simple approach as a write-once file system. We will erase the 128k flash once, and then program 0’s into the flash memory dynamically as it runs. Data logging and storage of debug information are applications of a write-once file system. For this simple file system, we can choose the sector size to be any size, because the flash is erased only once, and data is programmed as the user creates and writes sectors to the file. The size of the disk is 128 kibibytes, i.e., 217 bytes. If the sector size is 2n, then there will be 217-n sectors. For this system, if we were to use the fast write capabilities of the TM4C123 we could partition the 128 kibibyte disk as 1024 sectors with 128 bytes in each sector. Conversely, if we use the regular write function (Flash_WriteArray) then we could choose any sector size. In Lab 5 we will partition the disk into 256 sectors with 512 bytes per sector creating a file system where the sector address is an 8-bit number.
+
+Program 5.2 shows the prototypes of the disk-level functions. You will implement these three functions in Lab 5. eDisk_Init() has no operations to perform in this system. It was added because other disks, like the SD card, will need initialization. For Lab 5, you could have eDisk_Init return zero if the drive parameter is 0 and return 1 if the drive parameter is not zero. Reading a sector requires an address translation. The function eDisk_ReadSector will copy 512 bytes from flash to RAM. The start of the disk is at flash address 0x00020000. Each sector is 512 bytes long, so the starting address of the sector is simply
+
+     0x00020000 + 512*sector
+
+Writing a sector requires the same address translation. The function eDisk_WriteSector will program 512 bytes from RAM into flash. In particular, it will do the address translation and call the function Flash_WriteArray. 512 bytes is 128 words, so the count parameter will be 128.
+
+    <!-- language: lang-c -->
+    //*************** eDisk_Init ***********
+    // Initialize the interface between microcontroller and disk
+    // Inputs: drive number (only drive 0 is supported)
+    // Outputs: status
+    //  RES_OK    0: Successful 
+    //  RES_ERROR 1: Drive not initialized
+    enum DRESULT eDisk_Init(uint32_t drive);
+    
+    //*************** eDisk_ReadSector ***********
+    // Read 1 sector of 512 bytes from the disk, data goes to RAM
+    // Inputs: pointer to an empty RAM buffer
+    // sector number of disk to read: 0,1,2,...255
+    // Outputs: result
+    //  RES_OK     0: Successful 
+    //  RES_ERROR  1: R/W Error 
+    //  RES_WRPRT  2: Write Protected 
+    //  RES_NOTRDY 3: Not Ready 
+    //  RES_PARERR 4: Invalid Parameter 
+    enum DRESULT eDisk_ReadSector(
+            uint8_t *buff, // Pointer to a RAM buffer into which to store
+            uint8_t sector); // sector number to read from
+    
+    //*************** eDisk_WriteSector ***********
+    // Write 1 sector of 512 bytes of data to the disk, data comes from RAM
+    // Inputs: pointer to RAM buffer with information
+    // sector number of disk to write: 0,1,2,...,255
+    // Outputs: result
+    //  RES_OK     0: Successful 
+    //  RES_ERROR  1: R/W Error 
+    //  RES_WRPRT  2: Write Protected 
+    //  RES_NOTRDY 3: Not Ready 
+    //  RES_PARERR 4: Invalid Parameter 
+    enum DRESULT eDisk_WriteSector(
+            const uint8_t *buff, // Pointer to the data to be written 
+            uint8_t sector); // sector number
+
+*Program 5.2. Header file for the solid state disk device driver.*
 
 
 
