@@ -595,9 +595,37 @@ OS_File_Append(m,dat4);
 Notice that we limit usage to adding data to the disk is chunks of 512 bytes. As mentioned earlier we will never delete a file, nor will we delete parts of a file previously written. Furthermore, we always append to the end of a file, which means we never move data of a file from one place on the disk to another.
 
 
+--
+--
 
 
+###5.5.3. Directory
 
+[Directory](https://youtu.be/P6jgX_dJaLI)
+
+We will read the directory/FAT into RAM on startup. We need to be able to write the directory to the disk multiple times. We will write the directory/FAT each time we close a file and before removing power. Figure 5.18 shows one possible implementation of the process to create a new file. This function will return the file number (0 to 254) of a file not yet written to.
+
+
+![Figure 5.18](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/942bef1037fdae3e3dd913f3dc018c47/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig05_18_writeonce.jpg)
+*Figure 5.18. Software flowchart for OS_File_New. Returning with a 255 means fail because the disk already has 254 files. The only way for this function to fail is if the disk has 254 files, and each file is one sector.*
+
+This simple file system assumes you append some data after you create a new file and before you create a second new file. The following shows a proper use case of creating multiple files:
+
+```c
+n = OS_File_New();        // create a new file
+OS_File_Append(n,stuff);  // add to n
+m = OS_File_New();        // second file
+OS_File_Append(m,other);  // add to m
+```
+
+If you violate this assumption and execute the following code, then files n and m will be one file. I.e., n will equal m.
+
+```c
+n = OS_File_New();        // create a new file
+m = OS_File_New();        // second file
+OS_File_Append(n,stuff);  // add to n
+OS_File_Append(m,other);  // add to m
+```
 
 
 
