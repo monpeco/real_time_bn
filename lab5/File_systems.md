@@ -543,8 +543,56 @@ Change the 1024 to 4096.
 --
 --
 
+###5.5.2. Allocation
+
+[Allocation](https://youtu.be/vKp04oQHz54)
+
+There are many possible solutions, but we choose FAT allocation because it supports appending to an existing file. FAT supports many small files or one large file. Because there are 256 sectors we will use 8-bit sector addresses. Because we will define a completely erased flash as “formatted”, we will use the sector address 255=0xFF to mean null-pointer, and use sector number 255 as the directory. To implement a FAT with this disk, we would need only 255 bytes. Since the sector is 512 bytes we can use 256 bytes for the directory and the other 256 bytes for the FAT. Notice that sectors are allocated to files, but never released. This means we can update the FAT multiple times because bits are all initially one (erased) and programmed to 0 once, and never need to be erased again.
+
+Since the files are identified by number and not name, the directory need not store the name. Rather the directory is a simple list of 255 8-bit numbers, containing the sector number of its first sector. Notice there is exactly one directory entry for each possible file. If this sector number is 255, this file is empty. Similarly, the FAT is another simple list of 255 8-bit numbers. However, a 255 in the FAT may mean a free sector or the last sector of a file. Notice there is one entry in the FAT for each data sector on the disk. Figure 5.15 shows the disk after formatting. Each rectangle in the disk figure represents a 512-byte data sector. The directory and FAT are both stored in sector number 255.
 
 
+![](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/0e33335052841d37bcde483802a2fa1f/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig05_15WriteOnce.jpg)
+*Figure 5.15. Empty disk on the write-once file system.*
+
+If we ask for a new file, the system will return a number from 0 to 254 of a file that has not been written. In other words, OS_File_New will return the number of an empty file. If we execute the following when the disk is empty, n will be OS_File_New will return a 0 (n=0), and the eight calls to OS_File_Append will store eight sectors on the disk. In this example the variables n,m,p are simple global variables containing the file numbers we are using. The parameters buf0-buf9, dat0-dat4, arr0-2 represent RAM buffers with 512 bytes of data. Having 18 buffers we not to imply we needed a separate RAM buffer for every sector on the disk, but rather to differentiate where data is stored on the disk. In other words, the use of 18 different RAM buffers was meant to associate the 18 calls to OS_File_Append with the corresponding 18 sectors used on the disk. You will see in Lab 5, that we will only use just one or two RAM buffers.
+
+```c
+n = OS_File_New();
+OS_File_Append(n,buf0);
+OS_File_Append(n,buf1);
+OS_File_Append(n,buf2);
+OS_File_Append(n,buf3);
+OS_File_Append(n,buf4);
+OS_File_Append(n,buf5);
+OS_File_Append(n,buf6);
+OS_File_Append(n,buf7);
+```
+
+![Figure 5.16](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/f4481fdc6e9b235b6a76536ba5aaef8f/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig05_16WriteOnce.jpg)
+*Figure 5.16. A disk with one file, this file has 8 sectors.*
+
+If we were to continue this example and execute the following, there would now be 3 files on the disk occupying 18 sectors.
+
+```c
+m = OS_File_New();
+OS_File_Append(m,dat0);
+OS_File_Append(m,dat1);
+OS_File_Append(m,dat2);
+OS_File_Append(m,dat3);
+p = OS_File_New();
+OS_File_Append(p,arr0);
+OS_File_Append(p,arr1);
+OS_File_Append(n,buf8);
+OS_File_Append(n,buf9);
+OS_File_Append(p,arr2);
+OS_File_Append(m,dat4);
+```
+
+![Figure 5.17](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/c59407259a6d6472b5efff8e9f516f78/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig05_17WriteOnce.jpg)
+*Figure 5.17. A disk with three files, file 0 has 10 sectors, file 1 has 5 sectors and file 2 has 3 sectors.*
+
+Notice that we limit usage to adding data to the disk is chunks of 512 bytes. As mentioned earlier we will never delete a file, nor will we delete parts of a file previously written. Furthermore, we always append to the end of a file, which means we never move data of a file from one place on the disk to another.
 
 
 
