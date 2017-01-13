@@ -385,6 +385,166 @@ Writing a sector requires the same address translation. The function eDisk_Write
 
 *Program 5.2. Header file for the solid state disk device driver.*
 
+--
+--
+
+###5.4.1. Directory
+
+Although the file system described in this section is simple, this section is not the way we intend you to do Lab 5. The approach to Lab 5 will be presented in Section 5.5.
+
+In this section, we develop a file system that would be appropriate for implementation with an SD card used for storage. In order to implement this file system, you would need to have physical layer eDisk driver functions for the SD card. There are a couple of projects for the TM4C123 that have implementations for this physical layer. The second example includes both a low-level eDisk and a high-level FAT16 file system for the SD card.
+   http://users.ece.utexas.edu/~valvano/arm/SDC_4C123.zip   
+   http://users.ece.utexas.edu/~valvano/arm/SDCFile_4C123.zip
+
+The first component of the file system is the directory, as shown in Figure 5.13. In this system, the sector size is 512 bytes. In order to support disks larger than 32 Mebibytes, 32-bit sector pointers will be used. The directory contains a mapping between the symbolic filename and the physical address of the data. Specific information contained in the directory might include the filename, the number of the first sector containing data, and the total number of bytes stored in the file. One possible implementation places the directory in sector 0. In this simple system, all files are listed in this one directory (there are no subdirectories). There is one fixed-size directory entry for each file. A filename is stored as an ASCII string in an 8-byte array. A null-string (first byte 0) means no file. Since the directory itself is located in sector 0, zero can be used as a null-sector pointer. In this simple scheme, the entire directory must fit into sector 0, the maximum number of files can be calculated by dividing the sector size by the number of bytes used for each directory entry. In Figure 5.9, each directory entry is 16 bytes, so there can be up to 512/16 = 32 files. We will need one directory entry to manage the free space on the disk, so this disk format can have up to 31 files.
+
+
+![Figure 5.13](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/8d6f7caae64cc701227f04d1881a2039/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/fig05_13_Simple.jpg)
+*Figure 5.13. Directory for a linked file allocation with 512-byte sectors. Each file in the directory points to its first sector.*
+
+Other information that one often finds in a directory entry includes a pointer to the last sector of the file, access rights, date of creation, date of last modification, and file type.
+
+--
+--
+
+###5.4.2. Allocation
+
+The second component of the file system is the logical-to-physical address translation. Logically, the data in the file are addressed in a simple linear fashion. The logical address ranges from the first to the last. There are many algorithms one could use to keep track of where all the data for a file belongs. This simple file system uses linked allocation as illustrated in Figure 5.6. Recall that the directory contains the sector number of the first sector containing data for the file. The start of every sector contains a link (the sector number) of the next sector, and a byte count (the number of data bytes in this sector). If the link is zero, this is last sector of the file. If the byte count is zero, this sector is empty (contains no data). Once the sector is full, the file must request a free sector (empty and not used by another file) to store more data. Linked allocation is effective for systems that employ sequential access. Sequential read access involves two functions similar to a magnetic tape: rewind (start at beginning) and read the next data. Sequential write access simply involves appending data to the end of the file. Figure 5.13 assumes the sector size is 512 bytes and the filename has up to 7 characters. The null-terminated ASCII string is allocated 8 bytes regardless of the size of the string. The sector pointer and the size entry (e.g., file ‘Ramesh’ has 519 bytes) each require 4 bytes (32 bits). Since each data sector has a 4-byte link and a 2-byte counter, each sector can store up to 506 bytes of data.
+
+--
+--
+
+###5.4.3. Free space management
+
+The third component of the file system is free-space management. Initially, all sectors except the one used for the directory are free and available for files to store data. To store data into a file, sectors must be allocated to the file. When a file is deleted, its sectors must be made available again. One simple free-space management technique uses linked allocation, similar to the way data is stored. Assume there are N sectors numbered from 0 to N-1. An empty file system is shown in Figure 5.14. Sector 0 contains the directory, and sectors 1 to N-1 are free. You could assign the last directory entry for free-space management. This entry is hidden from the user. E.g., this free-space file cannot be opened, printed, or deleted. It doesn't use any of the byte count fields, but it does use the links to access all of the free sectors. Initially, all of the sectors (except the directory itself) are linked together, with the special directory entry pointing to the first one and the last one having a null pointer.
+
+![Figure 5.14](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/17d3da373b6aabf0446a0008992822be/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/fig05_14FAT.jpghttps://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/17d3da373b6aabf0446a0008992822be/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/fig05_14FAT.jpg)
+*Figure 5.14. Free-space management.*
+
+When a file requests a sector, it is unlinked from the free space and linked to the file. When a file is deleted, all of its sectors are linked to the free space again.
+
+
+####CHECKPOINT 5.14
+
+If the directory shown in Figure 5.13 allocated 6 bytes for the filename instead of 10, how many files could it support?
+
+Each directory entry now requires 10 bytes. You could have 50 files, leaving some space for the free space management.
+
+
+--
+--
+
+###5.5.1. Usage
+
+####The material in Section 5.5 is how we intend you to implement Lab 5.
+
+[Restrictions](https://youtu.be/yA-b0rLRB34)
+
+Even though the previous approaches were indeed simple, we can simplify the file system even more if we make the following usage restrictions/specifications:
+
+* The 128k flash memory is erased only once at the time of downloading the project;
+* The act of erasing the entire flash is equivalent to "formatting" the disk;
+* The disk is partitioned into 256 sectors of 512 bytes/sector;
+* We can append data to a file but cannot delete data or files;
+* We append data to a file in chunks of 512 bytes;
+* We will read data in a sequential fashion;
+* We assign file names as single 8-bit numbers (0 to 254);
+* We limit the file system to a maximum of 255 files;
+* We will mount (initialize the driver) the file system on startup;
+* We will call flush (backup to disk) the file system before powering down.
+* One sector will be reserved for the operating system to manage the directory and allocation scheme and the other 255 sectors will contain data. When the program is loaded into flash, the entire flash is erased. This erase event will serve to "format" the disk. All 255 data sectors will be free and the file system will have no files.
+
+While using this disk we could have 255 individual files, each with one sector. We could have 51 files each with 5 sectors. Alternately, we could have one file with 255 sectors. Any combination is possible where the number of files is less than or equal to 255, and the total allocated sectors is also less than or equal to 255.
+
+There will be a function, OS_File_New, which will return the file number of an empty file. This function will fail if there are no more files left, because there are already 254 files created, or if there are no free sectors, because the disk is full.
+
+```c
+//********OS_File_New*************
+// Returns a file number of a new file for writing
+// Inputs: none
+// Outputs: number of a new file
+// Errors: return 255 on failure or disk full
+uint8_t OS_File_New(void);
+```
+
+To check the status of a file, we can call OS_File_Size. This function returns the number of sectors allocated to this file. If the size is zero, this is an empty file.
+
+```c
+//********OS_File_Size*************
+// Check the size of this file
+// Inputs: num, 8-bit file number, 0 to 254
+// Outputs: 0 if empty, otherwise the number of sectors
+// Errors: none
+uint8_t OS_File_Size(uint8_t num);
+```
+
+To write data to an existing file we need to specify the file number into which we will store the data. The write data function will allocate another sector to the file and append 512 bytes of new data to the file. The input parameters to OS_File_Append are the file number and a sector of 512 bytes of data to write. This function will fail if there are no free sectors, because the disk is full.
+
+```c
+//********OS_File_Append*************
+// Save 512 bytes into the file
+// Inputs: num, 8-bit file number, 0 to 254
+//         buf, pointer to 512 bytes of data
+// Outputs: 0 if successful
+// Errors: 255 on failure or disk full
+uint8_t OS_File_Append(uint8_t num, uint8_t buf[512]);
+```
+
+To read data from a file we call OS_File_Read. The three parameters to this function are the file number, the location, and a pointer to RAM. The location parameter defines the logical address of the data in a file. Location 0 will access the first sector of the file. For example, if a file has 5 sectors, the location parameter could be 0, 1, 2, 3, or 4. The read data function will copy 512 bytes of data from the file into the RAM buffer. This function will fail if this file does not have data at this location.
+
+```c
+//********OS_File_Read*************
+// Read 512 bytes from the file
+// Inputs: num, 8-bit file number, 0 to 254
+//         location, logical address, 0 to 254
+//         buf, pointer to 512 empty spaces in RAM
+// Outputs: 0 if successful
+// Errors: 255 on failure because no data
+uint8_t OS_File_Read(uint8_t num, uint8_t location,
+      uint8_t buf[512]);
+```
+
+We will load into RAM versions of the directory and the FAT when the system starts. When we call OS_File_Flush the RAM versions will be stored onto the disk. Notice that due to the nature of how this file system is designed, bits in the directory and FAT never switch from 0 to 1. We can either call this function periodically or call it once just before the system is shut down.
+
+```c
+//********OS_File_Flush*************
+// Update working buffers onto the disk
+// Power can be removed after calling flush
+// Inputs:  none
+// Outputs: 0 if success
+// Errors:  255 on disk write failure
+uint8_t OS_File_Flush(void);
+```
+
+During the software download, the flash is erased. When the flash is erased, the disk in essence is formatted, because we defined the all ones state as empty. However, if one wishes to erase the entire disk removing all data and all files, one could call OS_File_Format. This function will erase the flash from 0x00020000 to 0x0003FFFF. You will not need to implement this function in Lab 5. However, on the TM4C123, it could be implemented by erasing all blocks from 0x00020000 to 0x0003FFFF. Notice that this implementation skips the eDisk layer and directly calls the physical layer.
+
+```c
+//********OS_File_Format*************
+// Erase all files and all data
+// Inputs: none
+// Outputs: 0 if success
+// Errors: 255 on disk write failure 
+uint8_t OS_File_Format(void){
+uint32_t address;
+  address = 0x00020000; // start of disk
+  while(address <= 0x00040000){
+    Flash_Erase(address); // erase 1k block
+    address = address+1024;
+  }
+}
+```
+
+####CHECKPOINT 5.15
+
+The physical block size on the MSP432 is 4096 bytes. How would you modify OS_File_Format for the MSP432?
+
+Change the 1024 to 4096.
+
+--
+--
+
+
+
 
 
 
