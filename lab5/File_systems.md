@@ -627,6 +627,58 @@ OS_File_Append(n,stuff);  // add to n
 OS_File_Append(m,other);  // add to m
 ```
 
+--
+--
+
+###5.5.4. Append
+
+[Append](https://youtu.be/xF-68eAkOyo)
+
+Figure 5.19 shows one possible implementation of the function that appends a data buffer to an existing file.
+
+
+![Figure 5.19](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/92eaf17ba45bfe6778dc75693aafb423/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig05_19_writeonce.jpg)
+*Figure 5.19. Software flowchart for OS_File_Append. Returning with a 255 means fail because there are no free sectors on the disk.*
+
+Figure 5.20 shows the helper function that appends the sector number (n) to the FAT link associated with file (num).
+
+
+
+![Figure 5.20](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/c028f8d1de320efcdd9aa4cc442106d9/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig05_20_writeonce.jpg)
+*Figure 5.20. Software flowchart for the helper function appendfat.*
+
+--
+--
+
+###5.5.5. Free space management
+
+[Free space management](https://youtu.be/iOMlb4vbSnE)
+
+An entry in the FAT of 255 means that sector is free or that is the last sector of a file. However, since files are never deleted or reduced in size, there will be no external fragmentation and all free sectors exist in one contiguous chunk. In particular, if we search the FAT for the last sector of each file, find the maximum of these numbers, the first free sector is this maximum+1. The last free sector is 254. Figure 5.21 shows the helper function that finds a free sector on the disk.
+
+
+![Figure 5.21](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/17c24c2b717fceb809253372782957ab/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig05_21_writeonce.jpg)
+*Figure 5.21. Software flowchart for the helper function findfreesector.*
+
+Figure 5.22 shows the helper function that finds the last sector of file that starts at sector.
+
+
+![Figure 5.22](https://d37djvu3ytnwxt.cloudfront.net/assets/courseware/v1/bbb0a33d89669a447e126520c79a69fb/asset-v1:UTAustinX+UT.RTBN.12.01x+3T2016+type@asset+block/Fig05_22_writeonce.jpg)
+*Figure 5.22. Software flowchart for the helper function lastsector.*
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
